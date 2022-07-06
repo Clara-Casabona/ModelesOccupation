@@ -1,0 +1,1595 @@
+---
+title: "Modèles d'occupation"
+subtitle: "<hr>"
+author: "Clara Casabona Amat"
+output:
+  xaringan::moon_reader:
+    includes:
+      in_header: "qcbsR-header.html"
+    lib_dir: assets
+    seal: true
+    css: ["default", "qcbsR.css", "qcbsR-fonts.css"]
+    nature:
+      ratio: '4:3'      
+      beforeInit: "qcbsR-macros.js"
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+
+# Matériel requis
+
+
+Pour suivre cet atelier, il est nécessaire d'avoir téléchargé et installé les dernières versions de [RStudio](https://rstudio.com/products/rstudio/download/#download) et de [R](https://cran.rstudio.com/).
+
+.pull-left[
+Vous devez également utiliser les paquets suivants :
+
+
+* [unmarked](https://cran.r-project.org/web/packages/unmarked/index.html)
+* [AICcmodavg](https://cran.r-project.org/web/packages/AICcmodavg/index.html)
+* [ggplot2](https://cran.r-project.org/web/packages/ggplot2/index.html)
+
+]
+
+.pull-right[
+
+Pour les installer à partir du CRAN, exécutez :
+
+```{r eval=FALSE}
+install.packages(c("unmarked",
+                   "AICcmodavg",
+                   "ggplot2"))
+```
+
+
+]
+<br>
+
+
+---
+
+# Matériel requis
+
+<br>
+
+.pull-left2[
+Tout au long de cet atelier, il y aura une série de **défis** et des  **questions** que vous pouvez reconnaître par ce rubix cube.
+
+]
+
+.pull-right2[
+.center[
+![:scale 45%](images/rubicub.png)
+
+]
+
+]
+
+<br>
+
+<br>
+
+.center[
+**Lors de ces défis, n'hésitez pas à collaborer !**.
+]
+
+---
+# Objectifs d'apprentissage
+
+<br>
+
+**1.**  Décrire les modèles d'occupation de sites
+
+<br>
+
+**2.**  Identifier les situations dans lesquelles l'utilisation des modèles d'occupation de sites est appropriée
+
+<br>
+
+**3.** Exécuter les modèles avec `R`
+
+<br>
+
+**4.**  Valider, interpréter et visualiser les modèles avec `R`
+
+<br>
+
+**5.**  Petite introduction aux modèles d'occupation dynamiques 
+
+---
+# Questions de recherche 
+
+--
+
+.alert[**1. Quelle est la probabilité d'observer une mésange à tête brune dans une série de sites?**]
+
+--
+
+.alert[**2. Est-ce que la présence de la mésange à tête brune dans une parcelle de forêt augmente avec pourcentage de conifères?**]
+
+--
+
+.alert[**3. Est-ce que la détection de cette espèce est affectée par le jour de l'échantillonnage ou la température?**]
+
+--
+
+
+.center[![:scale 60%](images/Study_area.png)]
+
+
+---
+# Exploration du jeu de données ![:cube]()
+
+**Familiarisez-vous avec le jeu de données**
+
+**1.** Ouvrez le script de l'atelier dans `R`
+
+**2.** Ouvrez le jeu de données `borchi.csv` dans `R`
+
+**3.** Explorez la structure du jeu de données
+
+--
+
+
+# Qu'est-ce que vous observez?
+
+--
+
+
+| V1 | V2  | V3  | Conif |  Temp1      |  Temp2 | Temp3  | jj1 | jj2 | jj3|
+|:-----: | :---:     |:--:    |  :------:  |:------: |:-----:| :---:  |:--:   |:-----:| :---:    |
+ | 1        | 1         |  0     |  0.5     | 7.5       | 8.6    | 7.9      | 8    |13      | 25       |  
+ | 1        | 0         | 0      |  1.0     |10.9      | 10.1     | 11.3     |11     |22     | 26        | 
+ | 0        | 0         |  0     |  0.2     | 8.6      | 8.3     | 9.3    |  11    |11      | 25       | 
+
+--
+
+* 60 Observations
+* 3 Visites (*V1*, *V2*, *V3*) par ligne
+* Une variable environnementale (*Conif* = pourcentage de conifères dans le site)
+* 3 Variables de temperature (*Temp1*, *Temp2*, *Temp3*)
+* 3 Variables de jour julien (*jj1*, *jj2*, *jj3*)
+
+---
+# Pourquoi choisir un modèle d'occupation de sites?
+
+
+--
+
+Example: 
+
+
+Lors de l'inventaire de la mésange à tête brune, il y a des sites où l'espèce est détectée et des sites où l'espèce n'est pas détectée: 
+
+<br>
+
+| Site ID | Visite 1 |
+|:------: |:-----:| 
+| A       | 1     |  
+| B       | 1     | 
+| C       | 0     |  
+
+--
+
+<br>
+Mais .alert[attention]!  Une **non-détection** peut être due au fait que l'espèce soit absente sur le site ou simplement qu'elle n'a pas été détectée lors de l'inventaire. 
+
+<br>
+
+--
+
+| Site ID | Visite 1      | Visite 2      | 
+|:------: |:-----:| :-------------:|
+| A       | 1     | 1 | 
+| B       | 1     | 0  |
+| C       | 0     | 1 |  
+ 
+---
+# Pourquoi choisir un modèle d'occupation de sites?
+
+<br>
+
+
+- Les distributions des espèces sont sous-estimées chaque fois que la probabilité de détection ( $p$ ) est < 1
+
+<br>
+
+--
+
+- Les estimations des relations de covariables sont biaisées vers zéro chaque fois que p < 1
+
+<br>
+
+--
+
+- Les facteurs qui affectent la détection de l'espèce peuvent se retrouver dans des modèles prédictifs d'occurrence d'espèces
+ 
+---
+# Pourquoi choisir un modèle d'occupation de sites?
+
+Les modèles d'occupation de sites considèrent les **processus qui influencent la détection de l'espèce** à un site lors d'un inventaire:
+
+--
+
+.pull-left[
+##  L'occupation
+
+.center[ ![:scale 75%](images/occupenoncoupe.png) ]
+
+
+- L'espèce peut être présente dans le site (avec probabilité $\psi$)  
+
+<br>
+
+- L'espèce peut être absente dans le site  (avec probabilité $1 - \psi$)
+]
+
+--
+
+.pull-right[
+## La détection
+
+.center[ ![:scale 75%](images/observe.png) ]
+
+
+Si le site est non-occupé, l'espèce ne peut pas être détectée ( $p=0$)
+
+Si le site est occupé, à chaque visite $j$;
+- L'espèce peut être détectée (avec probabilité  $p_j$)  
+- L'espèce peut être non-détectée ( $1-p_j$). 
+
+]
+
+---
+# Pourquoi choisir un modèle d'occupation de sites?
+
+<br>
+
+.center[ ![:scale 50%](images/occupancy1.png) ]
+
+.footnote[.center[Figure modifie: Guillera‐Arroita, G. (2017). Modelling of species distributions, range dynamics and communities under imperfect detection: advances, challenges and opportunities. Ecography, 40(2), 281-295. ]]
+
+
+---
+class: inverse, center, middle
+
+# Modèles d'occupation de sites
+
+---
+
+# Modèles d'occupation de sites
+
+## Comment fonctionnent les modèles d'occupation?
+
+<br>
+
+Les modèles d'occupation modélisent conjointement le **processus écologique d'occurrence** des espèces ( $\psi$) et le **processus d'observation** de la détection des espèces ( $p$), mais les estiment comme des processus distincts. 
+
+
+ --
+ 
+<br>
+Le processus biologique de présence donné par la probabilité d'occupation 
+
+
+.center[ 
+$Z_i ∼ Bernoulli( \psi_i)$
+]
+
+--
+
+Le processus d'observation donné par la "vrai" présence * probabilité observations $p_{ij}$
+
+.center[
+$y_{ij} ∼ Bernoulli(Z_i∗p_{ij})$
+]
+
+
+Les deux processus peuvent être modélisés avec des covariables. 
+
+
+---
+
+# Modèles d'occupation de sites
+
+## Comment estimer la probabilité de détection ?
+
+
+### 1. Dispositif d'échantillonage: 
+
+--
+
+
+*  Sélectionner au moins 30 sites (ou plus selon la complexité des modèles)
+
+*  Faire au moins 2 visites par site pendant la période d'étude  
+
+<br>
+
+--
+
+### 2. Générer la matrice  de détection
+
+
+| Site ID | Visite 1      | Visite 2      | Visite 3    |
+|:------: |:-----:| :-------------:|:-------------:|
+| A       | 1     | 1 |  0 |
+| B       | 1     | 0  | 0 |
+| C       | 0     | 0 |  0|
+| D       | 0     | 1 |  1 |
+
+
+---
+
+# Modèles d'occupation de sites
+
+## Comment estimer la probabilité de détection ?
+
+### 3. Estimer la probabilité de détection 
+
+| Site ID | Visite 1      | Visite 2      | Visite 3    |
+|:------: |:-----:| :-------------:|:-------------:|
+| A       | 1     | 1 |  0 |
+
+<br>
+
+--
+
+La probabilité d'observer l'historique ( $h$ ) de l'espèce dans le site A:
+
+
+
+$$ Pr(h_A=110)  = \psi \: p_1 \:  p_2 \: (1-p_3)$$
+.center[ $\psi$ = Probabilité d'occupation
+
+$p$  = Probabilité de détection]
+
+<br>
+
+--
+
+Mais qu’est-ce qu’on fait avec les endroits qu'il y a aucune observation?
+
+---
+
+
+# Modèles d'occupation de sites
+
+## Comment estimer la probabilité de détection ?
+
+
+### 3. Estimer la probabilité de détection 
+
+##### Sites sans aucune détection
+
+| Site ID | Visite 1      | Visite 2      | Visite 3    |
+|:------: |:-----:| :-------------:|:-------------:|
+| c      | 0     | 0 |  0 |
+
+
+Il y a 2 possibilités:
+
+- L’espèce était présente, mais n’a pas été détectée:
+
+$$\psi (1-p_1) (1-p_2) (1-p_3) = \psi \prod_{j=1}^{n_{visits}}(1 - p_j)$$
+--
+
+- L’espèce n’était pas présente au site ( $1-\psi$ )
+
+---
+
+# Modèles d'occupation de sites
+
+## Comment estimer la probabilité de détection ?
+
+
+### 3. Estimer la probabilité de détection 
+
+##### Sites sans aucune détection
+
+Inclure les deux possibilités:
+
+$$Pr(h_C=000) = \psi \prod_{j=1}^{n_{visits}}(1 - p_j) + (1-\psi)$$
+---
+# Comment construire le modèle ?
+
+## Comment estimer la probabilité de détection et d'occupation?
+
+
+On cherche à trouvé le **maximum de vraisemblance** (Likelihood) des probabilités d'occupation  et de détection étant donné les histoires de détection des données récoltées.
+
+
+$$L(\psi,p|h_A, h_B, h_C,...,h_i) = \prod_{i=1}^{n_{sites}}[h_i]$$
+
+
+$[h_i]$ = Probabilité de chaque site
+
+---
+# Comment estimer le likelihood ?
+
+.alert[**Quelle est la probabilité d'observer une mésange à tête brune dans un site?**]
+
+--
+
+Lors d'une visite, l'espèce peut être détect (1) ou non-détecté (0) (expérience binomiale). 
+
+
+$$[x|v,p] = \frac{v!}{x!(v-x)!}*p^x(1-p)^{v-x}$$
+$x$ = nombre de détections pour  $v$ et  $p$ donnés
+
+$v$ = nombre total de visites
+
+$p$ = probabilité de détecté la mésange
+
+---
+# Comment estimer le likelihood ?
+
+.alert[**Quelle est la probabilité d'observer une mésange à tête brune dans un site?**]
+
+Exemple: Dans 1 site avec 3 visites et 2 détections
+
+
+$$[x = 2|v = 3, p] = \frac{3!}{2!(3-2)!}*p^2(1-p)^{3-2}$$
+
+On sait que  $p$ peut varier entre 0 et 1, alors on va substituer différentes valeurs de p dans la fonction
+
+--
+
+ $p$ = 0.2
+
+$$[x = 2|v = 3, p = 0.2] = \frac{3!}{2!(3-2)!}*0.2^2(1-0.2)^{3-2}  = 0.096 $$
+
+--
+
+ $p$ = 0.6
+
+$$[x = 2|v = 3, p = 0.6] = \frac{3!}{x!(3-2)!}*0.6^2(1-0.6)^{3-2}  = 0.43 $$
+
+Mais: quelle valeur de $p$ correspond au maximum de likelihood? 
+
+???
+la probabilité d’observer $x$ détection, après $v$ visites lorsqu’on a une probabilité $p$ d’observer 1 fois
+
+---
+# Comment estimer le likelihood ?
+
+.alert[**Quelle est la probabilité d'observer une mésange à tête brune dans un site?**]
+
+Code R :
+```{r  eval=FALSE}
+
+probDet <-seq(from=0, to=1, by=0.01)  
+LL = dbinom(x = 2, size = 3, prob = probDet)
+MLE = probDet[which(LL==max(LL))] 
+plot(LL~probDet, type = "l") 
+abline(v = MLE, col="red", lwd=3, lty=2)
+```
+
+
+.center[ ![:scale 60%](images/MLE32.png) ]
+
+
+
+Solution: le MLE se trouve quand p = 0.67 
+
+---
+# Défi ![:cube]()
+
+1. Quelle est la valeur de $p$ si on a 10 visites dans un site et on fait 4 observations
+
+2. Quelle est la valeur de  $p$ si on a 100 visites  et 40 observations?
+
+3. Représente graphiquement  le likelihood pour les différents  $p$, qu'est-ce qu'on observe?
+
+
+
+---
+# Solution  ![:cube]()
+
+**1. Quelle est la valeur de $p$ si on a 10 visites dans un site et on fait 4 observations**
+
+```
+LL10_4 = dbinom(x = 4, size =10, prob = probDet)
+MLE10_4 = probDet[which(LL10_4==max(LL10_4))]
+MLE10_4
+```
+**Response** : $p$ = 0.4
+
+
+**2. Quelle est la valeur de $p$ si on a 100 visites  et 40 observations?**
+
+
+
+```
+
+LL100_40 = dbinom(x = 40, size =100, prob = probDet)
+MLE100_40 = probDet[which(LL100_40==max(LL100_40))]
+MLE100_40
+```
+
+**Response** : $p$ = 0.4
+
+<br>
+
+Dans les deux cas, la probabilité d'observation de la mésange est le même $p$ = 0.4
+
+---
+# Solution ![:cube]()
+
+**3. Représente graphiquement  le likelihood pour les différents $p$ , qu'est-ce qu'on observe?**
+
+```
+plot(LL10_4~probDet, type = "l")
+abline(v = MLE10_4, col="red", lwd=3, lty=2)
+
+plot(LL100_40~probDet, type = "l")
+abline(v = MLE100_40, col="red", lwd=3, lty=2)
+```
+**Response** : 
+.center[ ![:scale 50%](images/detection.png) ]
+
+L’incertitude autour de l’estimé $p$ diminue quand la taille d’échantillon augmente.
+
+
+---
+# Suppositions du modèle de base
+
+
+<br>
+
+.center[ 
+$\psi$  et $p$ constant
+]
+
+
+<br>
+
+**1.**  L’état d’occupation à un site donné est constant entre la première et dernière visite (i.e., le site occupée reste occupée)
+
+<br>
+
+**2.** Probabilité d’occupation est la même pour tous les sites.
+
+<br>
+
+**3.** Si l'espèce est présente, la probabilité de la détecter pendant une visite est le même pour tous les sites.
+
+<br>
+
+**4.** La détection de l’espèce est indépendante dans chaque visite.
+
+
+---
+
+# Suppositions du modèle de base et incorporation des covariables
+
+.center[ 
+$\psi$ et $p$ variables
+]
+
+<br>
+
+Si les covariables sont mesurées pendant l’étude, on peut les incorporer afin d'augmenter la plausibilité du modèle et expliquer les patrons d'observation et détection. 
+
+
+
+.pull-left[
+
+Sur l’**occupation**, $\psi$
+
+- Constantes à travers le temps 
+- Covariables de site
+
+
+]
+
+.pull-right[
+
+Sur la **détection**, $p$
+
+- Peuvent varier dans le temps (mesurées à chaque visite/site)
+
+
+]
+
+--
+
+.pull-left[
+
+
+
+<br>
+
+
+Exemples: Type d'habitat, végétation, présence d'autres espèces, altitude...
+
+]
+
+--
+
+.pull-right[
+
+
+
+<br>
+
+
+Exemples:  Heure d'observation, température, effort d’échantillonnage, méthodologie...
+
+
+]
+
+
+---
+
+# Modéliser l’occupation et la détection
+
+
+.center[ 
+$Z_i ∼ Bernoulli( \psi_i)$
+]
+
+
+$\psi$ et $p$ sont des probabilités et on veut qu’elles varient entre 0 et 1.
+
+
+
+La fonction de lien logit impose une contrainte sur les paramètres afin qu’ils varient entre 0 et 1.
+
+$$logit(\psi) = log(\frac{\psi}{1-\psi})$$
+--
+
+C'est le même lien que dans une régression logistique.
+
+$$log(\frac{y}{1-y})= \beta_0 + B_{variable1} * variable1 + B_{variable2} * variable2$$
+
+---
+
+# Modéliser l’occupation et la détection
+
+
+Modèle avec occupation constante (intercepte seulement):
+
+$$logit(\psi)= \beta_0$$
+--
+
+Lorsqu’on connaît $\beta_0$, on peut trouver $\psi$
+
+
+$$logit(\psi)= \beta_0 + B_{variable1} * variable1 + B_{variable2} * variable2$$
+--
+
+
+Pour trouver $\psi$, on calcule 
+
+$$\psi= \frac{exp(\beta_0 + B_{variable1} * variable1 + B_{variable2} * variable2)}{1+exp(beta_0 + B_{variable1} * variable1 + B_{variable2} * variable2)}$$
+---
+
+# Modéliser l’occupation et la détection
+
+.center[
+$y_{ij} ∼ Bernoulli(Z_i∗p_{ij})$
+]
+
+Modèle avec détection constante (intercepte seulement):
+
+$$logit(p)= \beta_0$$
+--
+
+Lorsqu’on connaît $\beta_0$, on peut trouver $p$
+
+
+$$logit(p)= \beta_0 + B_{variable1} * variable1 + B_{variable2} * variable2$$
+--
+
+Pour trouver $p$, on calcule 
+
+$$p= \frac{exp(\beta_0 + B_{variable1} * variable1 + B_{variable2} * variable2)}{1+exp(beta_0 + B_{variable1} * variable1 + B_{variable2} * variable2)}$$
+---
+# Modéliser l’occupation et la détection
+
+<br>
+
+.center[ ![:scale 1000%](images/occupacymodelimage.jpg) ]
+
+.footnote[.center[Figure modifie: Guillera‐Arroita, G. (2017). Modelling of species distributions, range dynamics and communities under imperfect detection: advances, challenges and opportunities. Ecography, 40(2), 281-295. ]]
+
+---
+class: inverse, center, middle
+
+# Application  des modèles de base avec `R`
+
+##  Utilisation de unmarked et AICcmodavg packages
+
+---
+
+# Approche
+
+<br>
+
+1. Importer les données + Formatage 
+
+2. Création et exécution des modèles
+
+3. Vérifier les suppositions et l'ajustement
+
+4. Sélection de modèle (AICc) et inférence multimodèle
+
+5. Exploration les résultats 
+
+6. Prédictions - Représentation graphique 
+
+---
+
+# 1.1 Importer et explorer les données
+
+
+<br>
+
+
+```{r eval=FALSE}
+library(unmarked)
+borchi <- read.csv("borchi.csv", header = TRUE)
+str(borchi)
+```
+
+
+
+<br>
+
+| V1 | V2  | V3  | Conifer |  temp1      |  temp2 | temp3  | jj1 | jj2 | jj3|
+|:-----: | :---:     |:--:    |  :------:  |:------: |:-----:| :---:  |:--:   |:-----:| :---:    |
+ | 1        | 1         |  0     |  0.5     | 7.5       | 8.6    | 7.9      | 8    |13      | 25       |  
+ | 1        | 0         | 0      |  1.0     |10.9      | 10.1     | 11.3     |11     |22     | 26        | 
+ | 0        | 0         |  0     |  0.2     | 8.6      | 8.3     | 9.3    |  11    |11      | 25       | 
+
+
+<br>
+
+---
+
+# 1.2 Formatage des données
+
+-  Standardisation des variables
+
+--
+
+
+Variable de Site (Conifer)
+
+```{r eval=FALSE}
+conifer_mean <- mean(borchi$conif)
+conifer_sd   <- sd(borchi$conif)
+conifer_std  <- as.data.frame((borchi$conif - conifer_mean)/conifer_sd)
+names(conifer_std)[1] = paste("conifer_std")
+```
+
+--
+
+
+Variable d'observation (temp et jj)
+
+```{r eval=FALSE}
+temp =  borchi[, c(5:7)]
+temp_mean <- mean(as.vector(as.matrix(temp)))
+temp_sd   <- sd(as.vector(as.matrix(temp)))
+temp_std  <- (temp - temp_mean)/temp_sd
+
+jj = borchi[, c(8:10)]
+jj_mean <- mean(as.vector(as.matrix(jj)))
+jj_sd   <- sd(as.vector(as.matrix(jj)))
+jj_std  <- (jj - jj_mean)/jj_sd
+```
+
+
+
+---
+
+# 1.2 Formatage des données
+
+
+- Formater les données avec la fonction `unmarkedFrameOccu()` du package `unmarked`
+
+
+<br>
+```{r  eval=FALSE}
+borchi_data <- unmarkedFrameOccu(y = borchi[, c(1:3)],
+                                 siteCovs = conifer_std,
+                                 obsCovs  = list(temp_std = temp_std,
+                                                jj_std    = jj_std))
+```
+
+Dans la fonction:
+
+- `y`  contient les données d'observation (0, 1) des visites. Elle peut être une matrice ou un data.frame. 
+
+- `siteCovs` doit être un data.frame ou matrice  avec les variables liées au site
+
+- `obsCovs` doit être une liste de data.frame ou matrice avec les variables liées à l'observation.
+
+---
+
+# 1.2 Formatage des données
+
+Explorer l'objet `unmarkedFrameOccu` avec `summary(borchi_data)`
+
+
+```
+unmarkedFrame Object
+
+60 sites
+Maximum number of observations per site: 3 
+Mean number of observations per site: 3 
+Sites with at least one detection: 34 
+
+Tabulation of y observations:
+ 0  1 
+98 82 
+```
+.pull-left[
+
+```
+Site-level covariates:
+  conifer_std     
+ Min.   :-1.7752  
+ 1st Qu.:-0.8801  
+ Median : 0.3133  
+ Mean   : 0.0000  
+ 3rd Qu.: 0.9100  
+ Max.   : 1.2083  
+```
+]
+
+
+.pull-right[
+
+```
+Observation-level covariates:
+    temp_std            jj_std       
+ Min.   :-2.45001   Min.   :-1.5382  
+ 1st Qu.:-0.78104   1st Qu.:-0.8536  
+ Median :-0.08385   Median :-0.1689  
+ Mean   : 0.00000   Mean   : 0.0000  
+ 3rd Qu.: 0.81877   3rd Qu.: 1.0635  
+ Max.   : 2.16092   Max.   : 1.7482  
+ 
+```
+]
+
+---
+
+# 1.2 Formatage des données
+
+- Explorer l'object `unmarkedFrameOccu` avec `detHist` du package `AICcmodavg`
+
+<br>
+
+```{r  eval=FALSE}
+detHist(borchi_data)
+```
+
+Output:
+
+```
+Summary of detection histories: 
+          000 010 011 100 101 110 111
+Frequency  26   3   5   2   1   4  19
+
+Proportion of sites with at least one detection:
+ 0.57 
+
+Frequencies of sites with detections:
+         sampled detected
+Season-1      60       34
+```
+
+---
+
+# 2. Création et exécution des modèles
+
+-  Creation des modèles
+
+<br>
+
+Utilisation de la fonction `occu()` du package `unmarked`
+
+<br>
+
+Elements :  occu(~ $p(.)$ ~ $\psi(.)$ , data)
+
+<br>
+
+-  Modèles candidats:
+
+```{r  eval=FALSE}
+mod_null    <- occu( ~ 1  ~ 1,     data = borchi_data)
+
+mod_occ     <- occu( ~ 1  ~ Conif, data = borchi_data)
+
+mod_det     <- occu( ~ Temp_std + Heur_std  ~ 1, data = borchi_data)
+
+mod_complet <- occu( ~ Temp_std + Heur_std  ~ Conif, data = borchi_data)
+
+```
+
+---
+# 2. Création et exécution des modèles
+
+### Inspecter les modèles
+
+```
+summary(mod_null)
+```
+```
+Call:
+occu(formula = ~1 ~ 1, data = borchi_data)
+
+Occupancy (logit-scale):
+ Estimate    SE    z P(>|z|)
+    0.288 0.264 1.09   0.275
+
+Detection (logit-scale):
+ Estimate    SE   z  P(>|z|)
+     1.37 0.258 5.3 1.17e-07
+
+AIC: 186.5302 
+Number of sites: 60
+optim convergence code: 0
+optim iterations: 12 
+Bootstrap iterations: 0 
+```
+---
+# 2. Création et exécution des modèles
+
+### Inspecter les modèles
+
+.alert[**1. Quelle est la probabilité d'observer une mésange à tête brune dans une série de sites?**]
+
+```
+Call:
+occu(formula = ~1 ~ 1, data = borchi_data)
+
+
+Detection (logit-scale):
+ Estimate    SE   z  P(>|z|)
+     1.37 0.258 5.3 1.17e-07
+     
+```
+
+**Réponse** : 
+
+```{r}
+plogis(1.37)
+```
+
+---
+# 2. Création et exécution des modèles
+
+### Inspecter les modèles
+```
+summary(mod_complet)
+
+```
+```
+Call:
+occu(formula = ~temp_std + jj_std ~ conifer_std, data = borchi_data)
+
+Occupancy (logit-scale):
+            Estimate   SE    z P(>|z|)
+(Intercept)     1.26 1.09 1.15  0.2496
+conifer_std     6.73 2.66 2.53  0.0114
+
+Detection (logit-scale):
+            Estimate    SE     z P(>|z|)
+(Intercept)    0.794 0.358  2.22  0.0266
+temp_std       1.085 0.489  2.22  0.0266
+jj_std        -0.642 0.330 -1.95  0.0512
+
+AIC: 115.2416 
+Number of sites: 60
+optim convergence code: 0
+optim iterations: 33 
+Bootstrap iterations: 0
+```
+
+
+---
+# 3. Test d'ajustement
+
+<br>
+
+Nous pouvons utilise le test de MacKenzie et Bailey pour vérifier l'ajustement du modèle global dans le package `AICcmodavg`
+
+.alert[Attention!] Cette étape peut prendre quelques minutes a rouler (ou heures si le jeu de données et le nombre de simulations sont très grands)
+
+--
+
+
+```
+gof <- mb.gof.test(mod_complet, nsim = 10000, plot.hist = TRUE)
+save(gof, file = "mod_complet_gof.Rdata")
+gof$chisq.tab
+```
+
+--
+
+
+|  |  Cohort |Observed | Expected | Chi-square|
+|:-----: |:-----: |:-----: |:-----: |:-----: |
+|000|      0|       26| 26.188171 |0.001352074|
+|010|      0|        3|  1.710503 |0.972112572|
+|011|      0|        5|  4.221074 |0.143737277|
+|100|      0|        2|  1.262803 |0.430358910|
+|101|      0|        1|  3.276477 |1.581682865|
+|110|      0|       4 | 5.463913 |0.392217345|
+|111|      0|       19| 16.969619 |0.242930967|
+
+---
+
+# 3. Test d'ajustement
+
+
+Graphique de la distribution du $x^2$ observés par rapport aux $x^2$ 
+obtenus par bootstrap paramétrique (ĉ = 1.11)
+
+
+.center[![:scale 50%](images/GOF.png)]
+
+.xsmall[- Si ĉ < 1, le modèle est bien ajusté
+
+- Si  ĉ se trouve entre 1 et 4, le modèle est moyennement bien ajusté, il faudra ajuster pour cette valeur
+
+- Si ĉ > 4, le modèle n'est pas bien ajusté. Changer de modèle ou d'approche.]
+---
+
+# 4. Sélection de modèles
+
+Avec la fonction  `aictab()` du package `AICcmodavg` on fait une sélection  avec l'AICc.
+
+<br>
+
+
+--
+
+- Étape 1: Mettre les modèles dans une liste
+
+
+
+<br>
+
+
+- Étape 2: Assigner le nom des modèles
+
+<br>
+
+
+
+- Étape 3: Appliquer la fonction de sélection AICc (Avec la correction du  ĉ = `c.hat` si besoin)
+
+--
+
+<br>
+
+
+```
+Modeles <- list(mod_null,mod_occ,mod_det,mod_complet)
+Names   <- list("mod_null","mod_occ","mod_det","mod_complet")
+aictab(cand.set = Modeles, modnames = Names, c.hat = 1.11)
+```
+---
+
+# 4. Sélection de modèles
+
+
+
+Model sélection based on QAICc:
+
+
+<br>
+
+(c-hat estimate = 1.11)
+
+<br>
+
+ |    |       K|  QAICc |Delta_QAICc |QAICcWt |Cum.Wt| Quasi.LL|
+|:-----: |:-----: |:-----: |:-----: |:-----: |:-----: |
+|mod_complet| 6 |108.40   |     0.00 |   0.56 |  0.56 |  -47.41|
+|mod_occ    | 4| 108.84   |     0.44 |   0.44 |  1.00 |  -50.06|
+|mod_det    | 5 |134.52   |    26.13 |   0.00 |  1.00 |  -61.71|
+|mod_null   | 3 |170.87   |    62.47 |   0.00 |  1.00 |  -82.22|
+
+<br>
+
+
+
+**Interprétation**: 
+
+-  Le "*mod_complet*" est le modèle plus plausible
+
+-  Le "*mod_occ*" est aussi très plausible (équivalent); Detla AIC < 2. 
+
+
+---
+
+# 5. Inférence multimodèle
+
+Estimation pondérée de chaque variable du modèle - fonction `modavgShrink()`. 
+
+--
+
+```{r eval=FALSE}
+modavgShrink(cand.set = Modeles, modnames = Names, c.hat = 1.11, 
+             parm = "Conif_std", parm.type = "psi")
+```
+
+--
+
+<br>
+
+```
+Multimodel inference on "psi(conifer_std)" based on QAICc
+
+QAICc table used to obtain model-averaged estimate with shrinkage:
+	(c-hat estimate = 1.11)
+
+            K  QAICc Delta_QAICc QAICcWt Estimate   SE
+mod_null    3 170.87       62.47    0.00     0.00 0.00
+mod_occ     4 108.84        0.44    0.44     6.97 2.82
+mod_det     5 134.52       26.13    0.00     0.00 0.00
+mod_complet 6 108.40        0.00    0.56     6.73 2.80
+
+Model-averaged estimate with shrinkage: 6.84 
+Unconditional SE: 2.81 
+95% Unconditional confidence interval: 1.33, 12.35
+```
+--
+
+.alert[Est-ce qu'il y a un effet du *pourcentage de conifères* dans l'occupation de la mésange?]
+
+
+---
+
+# 5. Inférence multimodèle - Défi ![:cube]()
+
+--
+
+.alert[**1. Est-ce qu'il y a un effet de la *température* dans la probabilité de détection?**]
+
+.alert[**2. Est-ce qu'il y a un effet du *jour d'échantillonage* dans la probabilité de détection?**]
+
+
+Indice, faites attention au   `parm.type =...` on travaille avec la probabilité de détection (`detect`).
+
+---
+
+# 5. Inférence multimodèle - Défi  ![:cube]()
+
+
+
+.alert[**1.  Est-ce qu'il y a un effet de la *température* dans la probabilité de détection?**]
+
+**Solution : **
+
+```{r eval=FALSE}
+modavgShrink(cand.set = Modeles, modnames = Names, c.hat = 1.11, 
+             parm = "temp_std", parm.type = "detect")
+```
+
+Output:
+
+```
+Model-averaged estimate with shrinkage: 0.6 
+Unconditional SE: 0.66 
+95% Unconditional confidence interval: -0.7, 1.9
+```
+
+--
+
+**Response : ** Le 0 se trouve dans l'interval de confiance. Il n'y a pas un effet de la température dans la probabilité de détection.
+
+---
+
+# 5. Inférence multimodèle - Défi  ![:cube]()
+
+
+.alert[**2. Est-ce qu'il y a un effet du *jour julien* dans la probabilité de détection?**]
+
+**Solution :**
+
+
+
+
+```{r eval=FALSE}
+modavgShrink(cand.set = Modeles, modnames = Names, c.hat = 1.11,
+             parm = "jj_std", parm.type = "detect")
+```
+
+Output:
+
+```
+Model-averaged estimate with shrinkage: -0.36 
+Unconditional SE: 0.41 
+95% Unconditional confidence interval: -1.16, 0.45
+```
+
+--
+
+**Response:** Le 0 se trouve dans l'interval de confidence. Il n'y a pas un effet du jour julien dans la probabilité de détection.
+
+
+---
+
+# 6. Prédictions
+<br>
+
+Pour faire des prédictions pondérées en utilisant tous les modèles, il faut suivre les suivants étapes:
+
+<br>
+
+**1. Crée un nouveau jeu de données**
+
+<br>
+
+**2. Calculer les prédictions avec `modavgPred()`**
+
+<br>
+
+**3. Résumer les résultats dans un graphique**
+
+---
+
+# 6. Prédictions
+
+### 1. Crée un nouveau jeu de données
+
+Utiliser une séquence de la variable d'intérêt  (min to max)  et ajouter les valeurs standardisées pour faire les estimations
+
+```{r eval=FALSE}
+new_dats <- data.frame(temp = 
+                         seq(from = min(temp),
+                             to = max(temp), 
+                             length.out = 30),
+                       jj_std = 0)  # Variables fixés
+                       
+new_dats$temp_std <- (new_dats$temp - temp_mean)/temp_sd # Valeurs standardisées
+
+```
+---
+
+# 6. Prédictions
+
+### 2. Calculer les prédictions avec `modavgPred()`
+
+```{r eval=FALSE}
+preds <- modavgPred(cand.set = Modeles, modnames = Names,
+                    c.hat = 1.11, newdata = new_dats, 
+                    type = "response", parm.type = "detect")
+```
+
+--
+
+Ajouter les estimations au jeu de données qu'on a crée
+
+```{r eval=FALSE}
+new_dats$mod_avg_pred <- preds$mod.avg.pred
+new_dats$uncond_se <- preds$uncond.se
+new_dats$low95 <- preds$lower.CL
+new_dats$upp95 <- preds$upper.CL
+```
+
+---
+
+# 6. Prédictions
+
+### 3. Résumer les résultats dans un graphique
+
+
+
+.center[![:scale 80%](images/Ptemp.png)]
+
+
+---
+#  6. Prédictions -Défi  ![:cube]()
+
+Représente l'effet du pourcentage de conifères (Conifer) sur la probabilité d'occupation de la mésange à tête brune.
+
+<br>
+
+1. Crée un nouveau jeu de données
+
+2. Calculer les prédictions avec `modavgPred()`
+
+3. Résumer les résultats dans un graphique
+
+---
+#  6. Prédictions -Défi  ![:cube]()
+
+**Solution :**
+
+Création d´un nouveau jeu de données: 
+
+```{r eval=FALSE}
+
+new_dats <- data.frame(conif = seq(from = min(borchi$conif),
+                                   to   = max(borchi$conif), 
+                                   length.out = 30)) 
+new_dats$conifer_std <- (new_dats$conif - conifer_mean)/conifer_sd
+```
+
+--
+
+Calculer les prédictions avec `modavgPred()`
+
+```{r eval=FALSE}
+preds <- modavgPred(cand.set = Modeles, modnames = Names, c.hat = 1.11, 
+                    newdata  = new_dats, type = "response", parm.type = "psi")
+
+new_dats$mod_avg_pred <- preds$mod.avg.pred
+new_dats$uncond_se <- preds$uncond.se
+new_dats$low95 <- preds$lower.CL 
+new_dats$upp95 <- preds$upper.CL
+```
+
+---
+#  6. Prédictions -Défi  ![:cube]()
+
+Résumer les résultats dans un graphique
+
+```{r eval=FALSE}
+ggplot(new_dats, aes(conif)) + 
+  geom_line(aes(y = mod_avg_pred), colour = "blue") + 
+  geom_ribbon(aes(ymin = low95, ymax = upp95), alpha = 0.2) +
+  ylim(0,1) +   labs(y = expression("Probabilité d'occupation" (psi)), 
+                     x = "% Conifères dans la parcelle") +
+  theme_bw()
+
+```
+
+
+.center[![:scale 70%](images/Rplot.png)]
+
+
+---
+# Questions de recherche 
+
+--
+
+.alert[**1. Quelle est la probabilité d'observer une mésange à tête brune dans notre série de sites?**]
+
+--
+
+**Réponse** : ~ 80%  (Intercept detection modèle null)
+
+
+
+--
+
+<br>
+
+.alert[**2. Est-ce que la présence de la mésange à tête brune dans une parcelle de forêt augmente avec pourcentage de conifères?**]
+
+--
+
+.pull-left[
+**Réponse** : Oui, l'occupation de la mésange à tête brune augmente  avec le pourcentage de conifères. 
+
+]
+
+.pull-right[
+![:scale 70%](images/Rplot.png)
+
+]
+--
+
+<br>
+
+.alert[**3. Est-ce que la détection de cette espèce est affectée par le jour de l'échantillonnage ou la température?**]
+
+--
+
+**Réponse** : Non, dans les deux cas, le 0 se trouve dans l'IC. 
+
+---
+class: inverse, center, middle
+
+# Rapide présentation des modèles d'occupation dynamique 
+
+---
+
+# Modèles d'occupation dynamique
+
+
+**Permet de quantifier les changements d’occupation entre saisons** (MacKenzie et al. 2003)
+
+<br>
+
+4 groupes de paramètres à estimer: 
+
+.pull-left[
+
+* ( $\psi$ init) Probabilité d’occupation à la première saison 
+
+* ( $\gamma$ )  Probabilité de colonisation 
+
+* ( $\epsilon$ ) Probabilité d’extinction 
+
+* ( $p$ ) Probabilité de détection 
+
+
+
+]
+
+.pull-right[
+![:scale 100%](images/FIGUREPARAMETERS.png)
+]
+
+
+.footnote[.center[[MacKenzie, D. I., Nichols, J. D., Hines, J. E., Knutson, M. G., & Franklin, A. B. (2003). Estimating site occupancy, colonization, and local extinction when a species is detected imperfectly. Ecology, 84(8), 2200-2207](https://esajournals.onlinelibrary.wiley.com/doi/10.1890/02-3090)]]
+---
+# Modèles d'occupation dynamique
+
+## Exemple: Étude de l'expansion de la grue du Canada au Québec
+
+.pull-left[
+**Question de recherche** : Quels sont les facteurs qui ont une influence sur la colonisation de la grue du Canada sur le territoire Québécois?
+]
+
+
+.pull-right[
+
+![:scale 80%](images/grue.jpg)
+
+]
+
+.footnote[.center[[ Casabona I Amat, C., Adde, A., Mazerolle, M. J., Lepage, C., & Darveau, M. (2022). Breeding expansion of sandhill cranes in Quebec. The Journal of Wildlife Management, 86(3), e22169.](https://wildlife.onlinelibrary.wiley.com/doi/abs/10.1002/jwmg.22169)]]
+
+---
+
+# Modèles d'occupation dynamique
+
+#### Données
+
+.center[![:scale 60%](images/studyarea.png)]
+
+---
+
+# Modèles d'occupation dynamique
+
+#### Données
+
+.center[![:scale 80%](images/table.png)]
+---
+
+# Modèles d'occupation dynamique
+
+#### Données
+
+.center[![:scale 80%](images/occdyn.png)]
+
+---
+
+# Modèles d'occupation dynamique
+
+####  Formatage des données à l’aide de `unmarkedMultFrame()` dans `unmarked`
+
+```{r eval=FALSE}
+grue_data <- unmarkedMultFrame(y = det, 
+                               siteCovs = SiteCovs_s,
+                               obsCovs  = list(Met = Met, ..., JJ = JJ.std),
+                               yearlySiteCovs = list(year = year.std, ...), 
+                               numPrimary = 16)
+```
+
+Dans la fonction:
+
+.xsmall[
+- `y` :  contient les données d'observation (0, 1) 
+- `siteCovs` :  data.frame ou matrice  avec les variables liées au site
+- `obsCovs` :  liste de data.frame ou matrice avec les variables liées à l'observation.
+- `yearlySiteCovs` :  liste de data.frame ou matrice avec les variables liées à l'observation.
+- `numPrimary`:  liste de data.frame ou matrice avec les variables liées à l'observation.
+]
+---
+# Modèles d'occupation dynamique
+
+
+####  Creation des modèles
+
+Utilizant la fonction `colex()`, elements :  
+
+<br>
+<br>
+
+occu(~ $\psi(.)$ ~ $\gamma(.)$ ~ $\epsilon(.)$ ~ $p(.)$ , data)
+
+<br>
+<br>
+
+```{r eval=FALSE}
+
+model <-colext(psiformula   =  ~ MHo_p,
+               gammaformula =  ~ MAt.s + MAt2,
+               epsilonformula = ~ MHo_p,
+               pformula = ~JJ + Met_eff,
+               data = grue_data) 
+
+```
+
+
+---
+# Modèles d'occupation dynamique
+
+####  Sélection AICc
+
+![:scale 100%](images/aic.png)
+
+
+
+---
+# Modèles d'occupation dynamique
+
+####  Résultats (Inférence multimodèle + figures)
+
+.pull-left[
+![:scale 75%](images/occdyndet.png)
+![:scale 75%](images/psidyn.png)
+]
+
+.pull-right[
+![:scale 75%](images/epsdyn.png)
+![:scale 75%](images/coldyn.png)
+]
+
+
+---
+class: inverse, center, middle
+
+# Autres modèles qui considèrent la probabilité de détection
+
+---
+
+# Autres modèles (estimant les abondances)
+
+* Modèle d’hétérogénéité de Royle-Nichols
+
+* Modèle N-mixture pour décomptes à une saison
+
+* Modèle N-mixture dynamique pour décomptes (multiples saisons)
+
+* Occupation avec identification erronée lorsque l’espèce n’est pas bien identifiée (false-positive occupancy model)
+
+* Distance sampling
+
+Ces modèles seront présentés dans les prochains mois, notamment lors des prochains ateliers R du CSBQ. 
+
+
+---
+
+# Recommandations
+
+.center[![:scale 30%](images/occupancybook.jpeg)]
+.footnote[.center[[ MacKenzie, D. I., Nichols, J. D., Royle, J. A., Pollock, K. H., Bailey, L. L., & Hines, J. E. (2017). Occupancy estimation and modeling: inferring patterns and dynamics of species occurrence. Elsevier.](https://www.elsevier.com/books/occupancy-estimation-and-modeling/mackenzie/978-0-12-407197-1)]]
+---
+
+##### Developers and contributors
+
+This template has been originally developed by [Marie Hélène Brice](mailto:) and [Kevin Cazelles](mailto:) and improved with the CSS and the JS  by [Pedro H. P. Braga](mailto:).
+
+See [here and below](https://github.com/QCBSRworkshops/templateWorkshops/graphs/contributors) to find all contributors and developers of this template.
+]
+
+
+
+.footnote[.center[[This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License. ![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/deed.fr)]]
+---
+class: inverse, center, bottom
+
+# Thank you for your implication!
+
+<hr>
+
+![:scale 50%](images/qcbs_logo.png)
+
+<br>

@@ -1,0 +1,663 @@
+---
+title: "Occupancy dynamic models - Sandhill crane"
+author: "Clara Casbona"
+date: "28 Jul 2021"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+This code cover the basic steps for applying occupancy dynamic models to the  sandhill crane.
+
+Period : April - June, 2004 - 2019
+
+Study area : South 51 parallel, Quebec
+
+Data : Simulated data 
+
+# Packages : 
+
+```{r Directory, include=FALSE}
+library(AICcmodavg)
+library(unmarked)
+library(dplyr)
+library(ggplot2)
+library(ggcorrplot)
+library(tidymv)
+library(ggpubr)
+library(reshape2)
+library(extrafont)
+```
+
+# Loading data:
+
+```{r Directory2, include=FALSE}
+grue_dyn <- read.csv("../data/Simulated_data.csv", header = TRUE) #Database
+
+# If you don't want to run everything, You can load this data: 
+
+load("../data/MHo_p_MAt.sMAt2_MHo_p.Rdata") # To make the run faster
+#load("../data/Mod_long.Rdata")
+
+```
+
+Split data-set (detection (1/0), observation covariables and site covariables)
+
+```{r Directory3, include=FALSE}
+
+# Prepare tables for unmarked: 
+det   <- grue_dyn[,c(2:97)]
+Met   <- grue_dyn[,c(102:197)] 
+Met_eff <-  grue_dyn[,c(198:293)] 
+Eff   <- grue_dyn[,c(390:485)]
+JJ    <- grue_dyn[,c(486:581)]
+SiteCovs <- grue_dyn[,c(582:594)]
+YearCovs_MAt <- grue_dyn[,c(595:610)]
+YearCovs_MAi <- grue_dyn[,c(611:626)]
+
+## set up yearly site covariate
+year <- matrix(data = c( 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019),
+               nrow = nrow(JJ), 16, byrow = TRUE)
+
+
+colnames(SiteCovs) <- c("FOBO_p", "EPe_p", "EPf_p", "EPl_p", "EPm_p", "MHo_p", "mm", "temp", "MU_p", " km", "LONG", "MAt_s", "MAi_s")
+```
+
+Standardising covariates: 
+
+```{r Standardisation - Preparation pour unmarked, message=FALSE}
+
+# Site variables 
+
+SiteCovs_s <- SiteCovs %>% mutate_each_(funs(scale(.) %>% as.vector), vars=c( "MHo_p","MU_p", "mm", "temp", "LONG", "MAi_s", "MAt_s"))
+
+SiteCovs_s$MAt_2 <- SiteCovs_s$MAt_s^2 
+SiteCovs_s$MAi_2 <- SiteCovs_s$MAi_s^2 
+
+# Yearly changing variables (habitat + observational variables )
+MAi <- as.matrix(YearCovs_MAi)
+MAi.mean <- mean(MAi, na.rm = TRUE) 
+MAi.sd <- sd(MAi, na.rm = TRUE)
+MAi.s <- (MAi-MAi.mean)/MAi.sd
+MAi2 <- MAi.s^2 
+
+MAt <- as.matrix(YearCovs_MAt)
+MAt.mean <- mean(MAt, na.rm = TRUE) 
+MAt.sd <- sd(MAt, na.rm = TRUE)
+MAt.s <- (MAt-MAt.mean)/MAt.sd
+MAt2 <- MAt.s^2 
+
+Eff <- as.matrix(Eff)
+Eff.mean <- mean(Eff, na.rm = TRUE) 
+Eff.sd <- sd(Eff, na.rm = TRUE)
+Eff.std <- (Eff-Eff.mean)/Eff.sd
+Eff2 <- Eff.std^2
+
+
+JJ <- as.matrix(JJ)
+JJ.mean <- mean(JJ, na.rm = TRUE) 
+JJ.sd <- sd(JJ, na.rm = TRUE)
+JJ.std <- (JJ-JJ.mean)/JJ.sd
+JJ2 <- JJ.std^2
+
+year <- as.matrix(year)
+year.mean <- mean(year, na.rm = TRUE) 
+year.sd <- sd(year, na.rm = TRUE)
+year.std <- (year-year.mean)/year.sd
+
+
+
+```
+
+We convert this data into an unmarked object so we can start fitting occupancy models.
+
+```{r Formatage des donnees pour unmarked, echo=FALSE}
+## Function
+grue.data <- unmarkedMultFrame(y = det, 
+                                siteCovs = SiteCovs_s,
+                                obsCovs = 
+                                 list(Met = Met, 
+                                  Met_eff = Met_eff,
+                                  Eff = Eff.std,
+                                  JJ = JJ.std),
+                                yearlySiteCovs = 
+                                list(year = year.std,
+                                     MAi.s = MAi.s,
+                                     MAt.s = MAt.s,
+                                     MAi2 = MAi2,
+                                     MAt2 = MAt2), 
+                                numPrimary = 16)
+## summary for grue.data 
+summary(grue.data)
+
+detHist(grue.data)
+
+
+# DETECTION
+hist <- detHist(grue.data)
+hist <- hist$out.freqs
+str(hist)
+
+hist.df=data.frame(hist)
+season <- factor(c(2004:2019))
+hist.df <- cbind(hist.df, season)
+
+write.csv(hist.df, file = "../output/histdf.csv")
+
+hist.df1 <- hist.df[,c(1,7)]
+hist.df2 <- hist.df[,c(2:4,7)]
+
+his.melt=melt(hist.df1,var.id=season)
+
+
+samplet <- ggplot(data=his.melt, aes(x=season, y=value,group=variable)) +
+  geom_line(aes(color=variable), size = 0.5,color='darkblue')+
+  geom_point(aes(color=variable, shape=variable), size = 2,color='darkblue')+
+  xlab("") + ylab("") +
+    ggtitle("1A") +
+  theme_classic()+
+  theme(plot.title = element_text(size=15), 
+        axis.text=element_text(size=15),
+        axis.title=element_text(size=15,face="bold"),
+        axis.text.x = element_text(angle = 45,hjust = 1),
+        legend.position = c(0.1, 0.8),
+        legend.title = element_text(size =15)) 
+
+his.melt=melt(hist.df2,var.id=season)
+
+
+histogr <-ggplot(data=his.melt, aes(x=season, y=value, group=variable)) +
+  geom_line(aes(color=variable), size = 0.5)+
+  geom_point(aes(color=variable,shape=variable), size = 2)+
+  xlab("") + ylab("") +
+theme_classic()+
+    ggtitle("1B") +
+  scale_colour_brewer(palette = "Set1")+
+  theme(plot.title = element_text(size=15), 
+        axis.text=element_text(size=15),
+        axis.title=element_text(size=15,face="bold"),
+        axis.text.x = element_text(angle = 45,hjust = 1),
+        legend.position = c(0.1, 0.8),
+        legend.title = element_text(size =15))
+
+#Unification des deux graphiques dans un
+
+figure <- ggarrange(samplet, histogr + font("x.text", size = 15),
+                    ncol = 1, nrow = 2)
+annotate_figure(figure,
+                top = text_grob(""),
+                bottom = text_grob("Year", size = 15),
+                left = text_grob("Number of cells", rot = 90))
+
+
+```
+
+Verifying correlations
+
+```{r exploration inital et correlations}
+# Visualisation des donnes SiteCovs
+
+
+corr<- cor(SiteCovs[,6:11]) # aucune correlation > 0.4
+corr <- round(corr, 2)
+# Visualize correlogram  for site obs
+ggcorrplot(corr, sig.level=0.05, lab_size = 4.5, p.mat = NULL, 
+           lab = TRUE,color = c("#FC4E07", "white", "#00AFBB"),
+           insig = c("pch", "blank"), pch = 1, pch.col = "black", pch.cex =1,
+           tl.cex = 12) +
+  theme(axis.text.x = element_text(margin=margin(-2,0,0,0)),  # Order: top, right, bottom, left
+        axis.text.y = element_text(margin=margin(0,-2,0,0))) +
+  geom_vline(xintercept=1:ncol(corr)-0.5, colour="white", size=2) +
+  geom_hline(yintercept=1:ncol(corr)-0.5, colour="white", size=2) 
+
+
+```
+
+
+Now that we've created the data frame with detection histories and covariates, we use unmarked to fit a multiple-season occupancy model - MacKenzie et al. (2017). 
+
+We  fit the occupancy model to our data using the coltex() function, specifying the occupancy, colonisation, extinction and detection covariates, respectively. 
+
+Step 1: 
+
+First we created a list of models using covariantes for detection and selecting the best one to build the complet models.
+
+```{r Liste des modeles detection, echo=TRUE}
+# Liste de mod?les pour la d?tection 
+m0 <-  colext(~ 1, ~ 1, ~ 1, ~ JJ, data = grue.data)
+m1 <-  colext(~ 1, ~ 1, ~ 1, ~ JJ + Met_eff-1, data = grue.data)
+m2 <-  colext( ~ 1,  ~ 1, ~ 1, ~ JJ + Eff,  data = grue.data)
+m3 <- colext(psiformula = ~ 1, ~ 1, ~ 1, ~ JJ + Met -1, data = grue.data)
+
+```
+
+# AICc selection
+
+```{r Selection AIC, echo=FALSE}
+
+# Selection AICcmodavg
+
+Candidates <- list(m0, m1, m2, m3)
+Names <- c("m0", "m1", "m2", "m3")
+aictab(cand.set = Candidates, modnames = Names, c.hat = 1)
+save(m1, file= "Detect_model.Rdata")
+# check parametres
+evidence(aictab(cand.set = Candidates, c.hat = 1))
+lapply(Candidates, extractCN)
+lapply(Candidates, checkParms, simplify = FALSE)
+
+# checker convergence 
+lapply(Candidates, checkConv) 
+
+```
+
+
+Test GOF (Runing this take several hours) - You have to activated to run using eval = TRUE, include = TRUE
+```{r, eval=FALSE, include=FALSE}
+#Test de MacKenzie et Bailey for checking model adjustment
+
+gof <- mb.gof.test(m1, nsim = 1000, plot.hist = TRUE) 
+save(gof, file = "m1_dyn_gof.Rdata")
+
+
+## C.hat
+
+gof$chisq.table
+gof$c.hat.est
+
+
+# Plot
+hist(gof$t.star, 
+     main = as.expression(substitute("Bootstrapped "*chi^2*" fit statistic ("*nsim*" samples)",
+         list(nsim = gof$nsim))), 
+     xlim = range(c(gof$t.star, gof$chi.square)), 
+     xlab = paste("Simulated statistic ", 
+       "(observed = ", round(gof$chi.square, digits = 2), ")", 
+       sep = ""))
+title(main = bquote(paste(italic(P), " = ", .(gof$p.global))), 
+      line = -0.5)
+abline(v = gof$chi.square, lty = "dashed", col = "red")
+
+
+
+```
+
+
+Detection figure
+
+```{r}
+## Detection data
+nd <- data.frame(Met_eff=c('ATL_E','ATL_F','EBIRD_E','EBIRD_F','HHT'), JJ = 0)
+E.det <- predict( m1, type='det', newdata=nd)
+
+save(E.det, file = "../output/E.det.Rdata")
+
+with(E.det, {
+  plot(1:5, Predicted, pch=19, xaxt='n', xlab='Sampling methodology split by effort',
+       ylab=expression(paste('Detection probability ( ', p, ' )')),
+       ylim=c(0,1), col= c("black", "black", "black", "black", "black"),
+       xlim = c(0.5,5.5), 
+       cex.axis = .9,
+       cex.lab = .8)
+  axis(1, at=1:5, labels=c("Atlas high", "Atlas low","eBird high", "eBird low", "CWS"),cex.axis = .7 )
+  arrows(1:5, lower, 1:5, upper, code=3, angle=90, length=0.05, col=  c("black", "black", "black", "black", "black"))
+})
+
+```
+Step 2.1:  Expansion models
+
+```{r modeles dynamiques LONG, echo=FALSE}
+MOD.LONG <- colext( ~ LONG , ~ LONG , ~ LONG , ~ JJ + Met_eff , grue.data )
+LONGYEAR <- colext( ~ 1 , ~ LONG + year + LONG*year , ~ 1  , ~ JJ + Met_eff , grue.data )
+LONGYEAR2 <- colext( ~ LONG , ~ LONG + year + LONG*year , ~ LONG + year + LONG*year  , ~ JJ + Met_eff , grue.data )
+
+save(MOD.LONG,LONGYEAR,LONGYEAR2, file = "Mod_long.Rdata")
+load("Mod_long.Rdata")
+summary(MOD.LONG)
+summary(LONGYEAR2)
+
+modYEAR2 <- colext( ~1 , ~ year  , ~ year   , ~ JJ + Met_eff , grue.data )
+```
+
+Expansion models figures
+
+```{r figures LONG, echo=FALSE, warning=FALSE}
+
+# Expansion prediction plots
+
+LONG.mean <- mean(SiteCovs$LONG)
+LONG.sd <- sd(SiteCovs$LONG)
+
+year_vector <- c (-1.6269476, -1.4100213, -1.1930949, -0.9761686, -0.7592422, -0.5423159, -0.3253895, -0.1084632,  0.1084632,  0.3253895, 0.5423159,  0.7592422,  0.9761686,  1.1930949,  1.4100213,  1.6269476)
+
+colonization_figures <- list()
+extinction_figures   <- list()
+  
+for (i in 1:length(year_vector)) {
+  
+ New_data <- data.frame(LONG.t = seq(from=min(-80, na.rm = TRUE),
+                                     to = max(-69, na.rm = TRUE),
+                                     length=3600),
+                        JJ = 0,     
+                        year = year_vector[i] ,
+                        Met_eff = factor("HHT",levels =levels(grue.data@obsCovs$Met_eff)))
+
+ New_data$LONG <- (New_data$LONG.t-LONG.mean)/LONG.sd 
+
+ 
+ # Colonization 
+ 
+ E.col <- predict(LONGYEAR2, type="col", newdata=New_data, appendData=TRUE)
+ E.col$Year <- i + 2003
+ E.col$fit <- E.col$Predicted
+ E.col$se.fit <- E.col$SE
+ E.col$lwl <- E.col$fit-1.96*E.col$se.fit
+ E.col$upl <- E.col$fit+1.96*E.col$se.fit
+ 
+ Plot_colonization <- E.col %>%
+  ggplot(aes(LONG.t, fit)) +
+  geom_smooth_ci(color = "black") +
+  theme_bw() +
+  ylim(0,1.02) +
+  geom_line(linetype = "dotted", aes(y = lwl), color = "grey43") +
+  geom_line(linetype = "dotted", aes(y = upl), color = "grey43") +
+  xlab("Longitude") + 
+   annotate(family="Times New Roman", geom = "text", y =0.9 ,  x= -78, label = i + 2003, size = 8) +
+  ylab(expression(paste('Colonization probability ( ', gamma, ' )'))) +
+  theme(
+      axis.title.x = element_text(family="Times New Roman", color="black", size = 16),
+      axis.title.y = element_text(family="Times New Roman",color="black", size=16),
+      axis.text=element_text(family="Times New Roman",size=12)
+    )
+ 
+ 
+  colonization_figures[[i]] <- Plot_colonization # Save all figures
+  
+ # Extinction 
+ E.ext <- predict(LONGYEAR2, type="ext", newdata=New_data, appendData=TRUE)
+ E.ext$Year <- i + 2003
+ E.ext$fit <- E.ext$Predicted
+ E.ext$se.fit <- E.ext$SE
+ E.ext$lwl <- E.ext$fit-1.96*E.ext$se.fit
+ E.ext$upl <- E.ext$fit+1.96*E.ext$se.fit
+ 
+ Plot_extinction <- E.ext %>%
+  ggplot(aes(LONG.t, fit)) +
+  geom_smooth_ci(color = "black") +
+  theme_bw() +
+  ylim(-0.02,1) +
+  geom_line(linetype = "dotted", aes(y = lwl), color = "grey43") +
+  geom_line(linetype = "dotted", aes(y = upl), color = "grey43") +
+  xlab("Longitude") + 
+  annotate(family="Times New Roman", geom = "text", y =0.9 ,  x= -78, label = i + 2003, size = 8) +
+  ylab(expression(paste('Extinction probability ( ', epsilon, ' )'))) +
+  theme(
+      axis.title.x = element_text(family="Times New Roman", color="black", size = 16),
+      axis.title.y = element_text(family="Times New Roman",color="black", size=16),
+      axis.text=element_text(family="Times New Roman",size=12)
+    )
+  extinction_figures[[i]] <- Plot_extinction # Save all figures
+
+}
+
+gridExtra::grid.arrange(grobs = colonization_figures[c(1,9,16)])
+gridExtra::grid.arrange(grobs = extinction_figures[c(1,9,16)])
+
+
+```
+
+Step 2.3: Habitat models 
+
+Running habitat models (This might take 1-2 hours)- You have to activated to run using eval = TRUE, include = TRUE
+
+```{r modeles dynamiques habitat - H1, eval=FALSE, include=FALSE}
+# List of 64 habitat models used in the AICc selection
+
+MHo_p_MHo_p_MHo_p<-colext(~MHo_p,~MHo_p,~MHo_p,~JJ+Met_eff,grue.data)
+MU_p_MHo_p_MHo_p<-colext(~MU_p,~MHo_p,~MHo_p,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MHo_p_MHo_p<-colext(~MAt_s+MAt_2,~MHo_p,~MHo_p,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MHo_p_MHo_p<-colext(~MAi_s+MAi_2,~MHo_p,~MHo_p,~JJ+Met_eff,grue.data)
+MHo_p_MU_p_MHo_p<-colext(~MHo_p,~MU_p,~MHo_p,~JJ+Met_eff,grue.data)
+MU_p_MU_p_MHo_p<-colext(~MU_p,~MU_p,~MHo_p,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MU_p_MHo_p<-colext(~MAt_s+MAt_2,~MU_p,~MHo_p,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MU_p_MHo_p<-colext(~MAi_s+MAi_2,~MU_p,~MHo_p,~JJ+Met_eff,grue.data)
+
+# This was the top ranked model in the AICc selection using our original data - set
+
+MHo_p_MAt.sMAt2_MHo_p <-colext(~MHo_p,~MAt.s+MAt2,~MHo_p,~JJ+Met_eff,grue.data) 
+
+#save(MHo_p_MAt.sMAt2_MHo_p, file = "../output/MHo_p_MAt.sMAt2_MHo_p.Rdata")
+
+
+MU_p_MAt.sMAt2_MHo_p<-colext(~MU_p,~MAt.s+MAt2,~MHo_p,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MAt.sMAt2_MHo_p<-colext(~MAt_s+MAt_2,~MAt.s+MAt2,~MHo_p,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MAt.sMAt2_MHo_p<-colext(~MAi_s+MAi_2,~MAt.s+MAt2,~MHo_p,~JJ+Met_eff,grue.data)
+MHo_p_MAi.sMAi2_MHo_p<-colext(~MHo_p,~MAi.s+MAi2,~MHo_p,~JJ+Met_eff,grue.data)
+MU_p_MAi.sMAi2_MHo_p<-colext(~MU_p,~MAi.s+MAi2,~MHo_p,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MAi.sMAi2_MHo_p<-colext(~MAt_s+MAt_2,~MAi.s+MAi2,~MHo_p,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MAi.sMAi2_MHo_p<-colext(~MAi_s+MAi_2,~MAi.s+MAi2,~MHo_p,~JJ+Met_eff,grue.data)
+MHo_p_MHo_p_MU_p<-colext(~MHo_p,~MHo_p,~MU_p,~JJ+Met_eff,grue.data)
+MU_p_MHo_p_MU_p<-colext(~MU_p,~MHo_p,~MU_p,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MHo_p_MU_p<-colext(~MAt_s+MAt_2,~MHo_p,~MU_p,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MHo_p_MU_p<-colext(~MAi_s+MAi_2,~MHo_p,~MU_p,~JJ+Met_eff,grue.data)
+MHo_p_MU_p_MU_p<-colext(~MHo_p,~MU_p,~MU_p,~JJ+Met_eff,grue.data)
+MU_p_MU_p_MU_p<-colext(~MU_p,~MU_p,~MU_p,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MU_p_MU_p<-colext(~MAt_s+MAt_2,~MU_p,~MU_p,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MU_p_MU_p<-colext(~MAi_s+MAi_2,~MU_p,~MU_p,~JJ+Met_eff,grue.data)
+MHo_p_MAt.sMAt2_MU_p<-colext(~MHo_p,~MAt.s+MAt2,~MU_p,~JJ+Met_eff,grue.data)
+MU_p_MAt.sMAt2_MU_p<-colext(~MU_p,~MAt.s+MAt2,~MU_p,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MAt.sMAt2_MU_p<-colext(~MAt_s+MAt_2,~MAt.s+MAt2,~MU_p,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MAt.sMAt2_MU_p<-colext(~MAi_s+MAi_2,~MAt.s+MAt2,~MU_p,~JJ+Met_eff,grue.data)
+MHo_p_MAi.sMAi2_MU_p<-colext(~MHo_p,~MAi.s+MAi2,~MU_p,~JJ+Met_eff,grue.data)
+MU_p_MAi.sMAi2_MU_p<-colext(~MU_p,~MAi.s+MAi2,~MU_p,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MAi.sMAi2_MU_p<-colext(~MAt_s+MAt_2,~MAi.s+MAi2,~MU_p,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MAi.sMAi2_MU_p<-colext(~MAi_s+MAi_2,~MAi.s+MAi2,~MU_p,~JJ+Met_eff,grue.data)
+MHo_p_MHo_p_MAt.sMAt2<-colext(~MHo_p,~MHo_p,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MU_p_MHo_p_MAt.sMAt2<-colext(~MU_p,~MHo_p,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MHo_p_MAt.sMAt2<-colext(~MAt_s+MAt_2,~MHo_p,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MHo_p_MAt.sMAt2<-colext(~MAi_s+MAi_2,~MHo_p,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MHo_p_MU_p_MAt.sMAt2<-colext(~MHo_p,~MU_p,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MU_p_MU_p_MAt.sMAt2<-colext(~MU_p,~MU_p,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MU_p_MAt.sMAt2<-colext(~MAt_s+MAt_2,~MU_p,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MU_p_MAt.sMAt2<-colext(~MAi_s+MAi_2,~MU_p,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MHo_p_MAt.sMAt2_MAt.sMAt2<-colext(~MHo_p,~MAt.s+MAt2,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MU_p_MAt.sMAt2_MAt.sMAt2<-colext(~MU_p,~MAt.s+MAt2,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MAt.sMAt2_MAt.sMAt2<-colext(~MAt_s+MAt_2,~MAt.s+MAt2,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MAt.sMAt2_MAt.sMAt2<-colext(~MAi_s+MAi_2,~MAt.s+MAt2,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MHo_p_MAi.sMAi2_MAt.sMAt2<-colext(~MHo_p,~MAi.s+MAi2,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MU_p_MAi.sMAi2_MAt.sMAt2<-colext(~MU_p,~MAi.s+MAi2,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MAi.sMAi2_MAt.sMAt2<-colext(~MAt_s+MAt_2,~MAi.s+MAi2,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MAi.sMAi2_MAt.sMAt2<-colext(~MAi_s+MAi_2,~MAi.s+MAi2,~MAt.s+MAt2,~JJ+Met_eff,grue.data)
+MHo_p_MHo_p_MAi.sMAi2<-colext(~MHo_p,~MHo_p,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MU_p_MHo_p_MAi.sMAi2<-colext(~MU_p,~MHo_p,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MHo_p_MAi.sMAi2<-colext(~MAt_s+MAt_2,~MHo_p,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MHo_p_MAi.sMAi2<-colext(~MAi_s+MAi_2,~MHo_p,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MHo_p_MU_p_MAi.sMAi2<-colext(~MHo_p,~MU_p,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MU_p_MU_p_MAi.sMAi2<-colext(~MU_p,~MU_p,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MU_p_MAi.sMAi2<
+  -colext(~MAt_s+MAt_2,~MU_p,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MU_p_MAi.sMAi2<-colext(~MAi_s+MAi_2,~MU_p,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MHo_p_MAt.sMAt2_MAi.sMAi2<-colext(~MHo_p,~MAt.s+MAt2,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MU_p_MAt.sMAt2_MAi.sMAi2<-colext(~MU_p,~MAt.s+MAt2,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MAt.sMAt2_MAi.sMAi2<-colext(~MAt_s+MAt_2,~MAt.s+MAt2,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MAt.sMAt2_MAi.sMAi2<-colext(~MAi_s+MAi_2,~MAt.s+MAt2,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MHo_p_MAi.sMAi2_MAi.sMAi2<-colext(~MHo_p,~MAi.s+MAi2,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MU_p_MAi.sMAi2_MAi.sMAi2<-colext(~MU_p,~MAi.s+MAi2,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MAt_sMAt_2_MAi.sMAi2_MAi.sMAi2<-colext(~MAt_s+MAt_2,~MAi.s+MAi2,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+MAi_sMAi_2_MAi.sMAi2_MAi.sMAi2<-colext(~MAi_s+MAi_2,~MAi.s+MAi2,~MAi.s+MAi2,~JJ+Met_eff,grue.data)
+
+hab_dyn <- c(MHo_p_MHo_p_MHo_p,MU_p_MHo_p_MHo_p,MAt_sMAt_2_MHo_p_MHo_p,MAi_sMAi_2_MHo_p_MHo_p,MHo_p_MU_p_MHo_p,MU_p_MU_p_MHo_p,MAt_sMAt_2_MU_p_MHo_p,MAi_sMAi_2_MU_p_MHo_p,MHo_p_MAt.sMAt2_MHo_p,MU_p_MAt.sMAt2_MHo_p,MAt_sMAt_2_MAt.sMAt2_MHo_p,MAi_sMAi_2_MAt.sMAt2_MHo_p,MHo_p_MAi.sMAi2_MHo_p,MU_p_MAi.sMAi2_MHo_p,MAt_sMAt_2_MAi.sMAi2_MHo_p,MAi_sMAi_2_MAi.sMAi2_MHo_p,MHo_p_MHo_p_MU_p,MU_p_MHo_p_MU_p,MAt_sMAt_2_MHo_p_MU_p,MAi_sMAi_2_MHo_p_MU_p,MHo_p_MU_p_MU_p,MU_p_MU_p_MU_p,MAt_sMAt_2_MU_p_MU_p,MAi_sMAi_2_MU_p_MU_p,MHo_p_MAt.sMAt2_MU_p,MU_p_MAt.sMAt2_MU_p,MAt_sMAt_2_MAt.sMAt2_MU_p, MAi_sMAi_2_MAt.sMAt2_MU_p,MHo_p_MAi.sMAi2_MU_p,MU_p_MAi.sMAi2_MU_p,MAt_sMAt_2_MAi.sMAi2_MU_p,MAi_sMAi_2_MAi.sMAi2_MU_p,MHo_p_MHo_p_MAt.sMAt2,MU_p_MHo_p_MAt.sMAt2,MAt_sMAt_2_MHo_p_MAt.sMAt2,MAi_sMAi_2_MHo_p_MAt.sMAt2,MHo_p_MU_p_MAt.sMAt2,MU_p_MU_p_MAt.sMAt2,MAt_sMAt_2_MU_p_MAt.sMAt2,MAi_sMAi_2_MU_p_MAt.sMAt2,MHo_p_MAt.sMAt2_MAt.sMAt2,MU_p_MAt.sMAt2_MAt.sMAt2,MAt_sMAt_2_MAt.sMAt2_MAt.sMAt2,MAi_sMAi_2_MAt.sMAt2_MAt.sMAt2,MHo_p_MAi.sMAi2_MAt.sMAt2,MU_p_MAi.sMAi2_MAt.sMAt2,MAt_sMAt_2_MAi.sMAi2_MAt.sMAt2,MAi_sMAi_2_MAi.sMAi2_MAt.sMAt2,MHo_p_MHo_p_MAi.sMAi2,MU_p_MHo_p_MAi.sMAi2,MAt_sMAt_2_MHo_p_MAi.sMAi2,MAi_sMAi_2_MHo_p_MAi.sMAi2,MHo_p_MU_p_MAi.sMAi2,MU_p_MU_p_MAi.sMAi2,MAt_sMAt_2_MU_p_MAi.sMAi2,MAi_sMAi_2_MU_p_MAi.sMAi2,MHo_p_MAt.sMAt2_MAi.sMAi2,MU_p_MAt.sMAt2_MAi.sMAi2,MAt_sMAt_2_MAt.sMAt2_MAi.sMAi2,MAi_sMAi_2_MAt.sMAt2_MAi.sMAi2,MHo_p_MAi.sMAi2_MAi.sMAi2,MU_p_MAi.sMAi2_MAi.sMAi2,MAt_sMAt_2_MAi.sMAi2_MAi.sMAi2 ,MAi_sMAi_2_MAi.sMAi2_MAi.sMAi2)
+
+names(hab_dyn)<- c("MHo_p_MHo_p_MHo_p","MU_p_MHo_p_MHo_p","MAt_sMAt_2_MHo_p_MHo_p","MAi_sMAi_2_MHo_p_MHo_p","MHo_p_MU_p_MHo_p"," MU_p_MU_p_MHo_p","MAt_sMAt_2_MU_p_MHo_p","MAi_sMAi_2_MU_p_MHo_p","MHo_p_MAt.sMAt2_MHo_p","MU_p_MAt.sMAt2_MHo_p","MAt_sMAt_2_MAt.sMAt2_MHo_p","MAi_sMAi_2_MAt.sMAt2_MHo_p","MHo_p_MAi.sMAi2_MHo_p","MU_p_MAi.sMAi2_MHo_p","MAt_sMAt_2_MAi.sMAi2_MHo_p","MAi_sMAi_2_MAi.sMAi2_MHo_p","MHo_p_MHo_p_MU_p","MU_p_MHo_p_MU_p","MAt_sMAt_2_MHo_p_MU_p","MAi_sMAi_2_MHo_p_MU_p","MHo_p_MU_p_MU_p","MU_p_MU_p_MU_p","MAt_sMAt_2_MU_p_MU_p","MAi_sMAi_2_MU_p_MU_p"," MHo_p_MAt.sMAt2_MU_p","MU_p_MAt.sMAt2_MU_p","MAt_sMAt_2_MAt.sMAt2_MU_p","MAi_sMAi_2_MAt.sMAt2_MU_p","MHo_p_MAi.sMAi2_MU_p","MU_p_MAi.sMAi2_MU_p","MAt_sMAt_2_MAi.sMAi2_MU_p","MAi_sMAi_2_MAi.sMAi2_MU_p","MHo_p_MHo_p_MAt.sMAt2","MU_p_MHo_p_MAt.sMAt2","MAt_sMAt_2_MHo_p_MAt.sMAt2","MAi_sMAi_2_MHo_p_MAt.sMAt2","MHo_p_MU_p_MAt.sMAt2","MU_p_MU_p_MAt.sMAt2","MAt_sMAt_2_MU_p_MAt.sMAt2","MAi_sMAi_2_MU_p_MAt.sMAt2","MHo_p_MAt.sMAt2_MAt.sMAt2","MU_p_MAt.sMAt2_MAt.sMAt2","MAt_sMAt_2_MAt.sMAt2_MAt.sMAt2","MAi_sMAi_2_MAt.sMAt2_MAt.sMAt2","MHo_p_MAi.sMAi2_MAt.sMAt2","MU_p_MAi.sMAi2_MAt.sMAt2","MAt_sMAt_2_MAi.sMAi2_MAt.sMAt2","MAi_sMAi_2_MAi.sMAi2_MAt.sMAt2","MHo_p_MHo_p_MAi.sMAi2","MU_p_MHo_p_MAi.sMAi2","MAt_sMAt_2_MHo_p_MAi.sMAi2","MAi_sMAi_2_MHo_p_MAi.sMAi2","MHo_p_MU_p_MAi.sMAi2","MU_p_MU_p_MAi.sMAi2","MAt_sMAt_2_MU_p_MAi.sMAi2","MAi_sMAi_2_MU_p_MAi.sMAi2","MHo_p_MAt.sMAt2_MAi.sMAi2","MU_p_MAt.sMAt2_MAi.sMAi2","MAt_sMAt_2_MAt.sMAt2_MAi.sMAi2","MAi_sMAi_2_MAt.sMAt2_MAi.sMAi2","MHo_p_MAi.sMAi2_MAi.sMAi2","MU_p_MAi.sMAi2_MAi.sMAi2","MAt_sMAt_2_MAi.sMAi2_MAi.sMAi2","MAi_sMAi_2_MAi.sMAi2_MAi.sMAi2")
+
+
+
+#load("hab_dyn2.Rdata")
+
+```
+
+Test GOF (Running this take several hours) - You have to activated to run using eval = TRUE, include = TRUE
+```{r eval=FALSE, , eval=FALSE, include=FALSE}
+#Test de MacKenzie et Bailey for checking model adjustment
+#gof <- mb.gof.test(MHo_p_MAt.sMAt2_MHo_p, nsim = 1000, plot.hist = TRUE)
+#save(gof, file = "MHo_p_MAt.sMAt2_MHo_p_dyn_gof.Rdata")
+
+gof <- gof6 # If you load our true gof, you will see the plot.
+
+
+## C.hat
+gof$chisq.table
+gof$c.hat.est
+
+
+# Plots
+hist(gof$t.star, 
+     main = as.expression(substitute("Bootstrapped "*chi^2*" fit statistic ("*nsim*" samples)",
+         list(nsim = gof$nsim))), 
+     xlim = range(c(gof$t.star, gof$chi.square)), 
+     xlab = paste("Simulated statistic ", 
+       "(observed = ", round(gof$chi.square, digits = 2), ")", 
+       sep = ""))
+title(main = bquote(paste(italic(P), " = ", .(gof$p.global))), 
+      line = -0.5)
+abline(v = gof$chi.square, lty = "dashed", col = "red")
+
+
+```
+
+AIC selection for habitat models (you need to run the models before)
+
+```{r selection modeles, eval=FALSE, include=FALSE}
+
+aictab(cand.set = hab_dyn,c.hat = 1)
+
+# check parametres
+
+evidence(aictab(cand.set = hab_dyn, c.hat = 1))
+lapply(hab_dyn, extractCN)
+lapply(hab_dyn, checkParms, simplify = FALSE)
+
+## checker convergence des modeles
+lapply(hab_dyn, checkConv) 
+
+summary(MHo_p_MAt.sMAt2_MHo_p)
+
+```
+
+Habitat figures 
+
+```{r figures habitat, echo=FALSE}
+
+# New DB for wetlands 
+
+MHo_p.mean <- mean(SiteCovs$MHo_p)
+MHo_p.sd <- sd(SiteCovs$MHo_p)
+
+mh <- data.frame(MHo = seq(from=min(SiteCovs$MHo_p, na.rm = TRUE),
+                           to = max(SiteCovs$MHo_p,na.rm = TRUE),
+                           length=50),
+                       MU_p= 0,
+                       MAi = 0,
+                       MAt = 0,
+                       JJ = 0,
+                       km = 0,
+                 mm = 0,
+                 temp = 0,
+                 An = 0,
+                       Met_eff = factor("HHT",levels =levels(grue.data@obsCovs$Met_eff)))
+
+mh$MHo_p <- (mh$MHo-MHo_p.mean)/MHo_p.sd 
+
+                        
+E.psi <- predict(MHo_p_MAt.sMAt2_MHo_p, type="psi", newdata=mh, appendData=TRUE)
+E.psi$fit <- E.psi$Predicted
+E.psi$se.fit <- E.psi$SE
+E.psi$lwl <- E.psi$fit-1.96*E.psi$se.fit
+E.psi$upl <- E.psi$fit+1.96*E.psi$se.fit
+ 
+ Plot_psi_openwetlands <- E.psi %>%
+  ggplot(aes(MHo, fit)) +
+  geom_smooth_ci(color = "black") +
+  theme_bw() +
+  ylim(-0.02,1.05) +
+  xlim(0,40) +
+  geom_line(linetype = "dotted", aes(y = lwl), color = "grey43") +
+  geom_line(linetype = "dotted", aes(y = upl), color = "grey43") +
+  xlab("% Open wetlands") + 
+  ylab(expression(paste('Initial occupancy ( ', psi, ' )'))) +
+  theme(
+      axis.title.x = element_text(family="Times New Roman", color="black", size = 16),
+      axis.title.y = element_text(family="Times New Roman",color="black", size=16),
+      axis.text=element_text(family="Times New Roman",size=12)
+    )
+ 
+
+E.ext <- predict(MHo_p_MAt.sMAt2_MHo_p, type="ext", newdata=mh, appendData=TRUE)
+E.ext$fit <- E.ext$Predicted
+E.ext$se.fit <- E.ext$SE
+E.ext$lwl <- E.ext$fit-1.96*E.ext$se.fit
+E.ext$upl <- E.ext$fit+1.96*E.ext$se.fit
+ 
+ Plot_extinction_openwetlands <- E.ext %>%
+  ggplot(aes(MHo, fit)) +
+  geom_smooth_ci(color = "black") +
+  theme_bw() +
+  ylim(-0.02,1) +
+   xlim(0,40) +
+  geom_line(linetype = "dotted", aes(y = lwl), color = "grey43") +
+  geom_line(linetype = "dotted", aes(y = upl), color = "grey43") +
+  xlab("% Open wetlands") + 
+  ylab(expression(paste('Extinction probability ( ', epsilon, ' )'))) +
+  theme(
+      axis.title.x = element_text(family="Times New Roman", color="black", size = 16),
+      axis.title.y = element_text(family="Times New Roman",color="black", size=16),
+      axis.text=element_text(family="Times New Roman",size=12)
+    )
+
+
+
+# Variables qu'influencent l'extinction
+
+ma <- data.frame(MAt = seq(from=min(MAt),
+                           to = max(MAt),
+                           length=50),
+                       MHo_p= 0,
+                       MAi = 0,
+                       MU_p = 0,
+                       JJ = 0,
+                       km = 0,
+                 mm = 0,
+                 temp = 0,
+                 An = 0,
+                       Met_eff = factor("HHT",levels =levels(grue.data@obsCovs$Met_eff)))
+ma$MAt.s <-(ma$MAt-MAt.mean)/MAt.sd 
+ma$MAt2 <- ma$MAt.s^2
+E.col<- predict(MHo_p_MAt.sMAt2_MHo_p, type="col", newdata=ma, appendData=TRUE)
+E.col$fit <- E.col$Predicted
+E.col$se.fit <- E.col$SE
+E.col$lwl <- E.col$fit-1.96*E.col$se.fit
+E.col$upl <- E.col$fit+1.96*E.col$se.fit
+
+Plot_col_agricultural <- E.col %>%
+  ggplot(aes(MAt, fit)) +
+  geom_smooth_ci(color = "black") +
+  theme_bw() +
+  ylim(0,1) +
+  xlim(0,90)+
+  geom_line(linetype = "dotted", aes(y = lwl), color = "grey43") +
+  geom_line(linetype = "dotted", aes(y = upl), color = "grey43") +
+  xlab("% Agricultural landscape") + 
+  ylab(expression(paste('Colonization probability ( ', gamma, ' )'))) +
+  theme(
+      axis.title.x = element_text(family="Times New Roman", color="black", size = 16),
+      axis.title.y = element_text(family="Times New Roman",color="black", size=16),
+      axis.text=element_text(family="Times New Roman",size=12)
+    )
+
+Plot_psi_openwetlands
+Plot_extinction_openwetlands
+Plot_col_agricultural
+
+
+```
+

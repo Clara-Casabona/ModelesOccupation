@@ -1,0 +1,29 @@
+"0","library(AICcmodavg)"
+"0","library(unmarked)"
+"0","library(dplyr)"
+"2","
+Attaching package: ‘dplyr’
+
+"
+"2","The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+"
+"0","library(ggplot2)"
+"0","library(ggcorrplot)"
+"0","library(tidymv)"
+"2","tidymv will be deprecated. Users are recommended
+    to check out the in-progress replacement tidygam
+    (https://github.com/stefanocoretta/tidygam).
+"
+"0","library(ggpubr)"
+"0","library(reshape2)"
+"0","library(extrafont)"
+"2","Registering fonts with R
+"

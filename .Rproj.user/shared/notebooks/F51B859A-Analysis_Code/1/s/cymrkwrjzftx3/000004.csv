@@ -1,0 +1,1 @@
+"0","MOD.LONG <- colext( ~ LONG , ~ LONG , ~ LONG , ~ JJ + Met_eff , grue.data )"
