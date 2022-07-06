@@ -1,7 +1,0 @@
-"0","grue_dyn <- read.csv(""../data/Simulated_data.csv"", header = TRUE) #Database"
-"0",""
-"0","# If you don't want to run everything, You can load this data: "
-"0",""
-"0","load(""../data/MHo_p_MAt.sMAt2_MHo_p.Rdata"") # To make the run faster"
-"0","#load(""../data/Mod_long.Rdata"")"
-"0",""

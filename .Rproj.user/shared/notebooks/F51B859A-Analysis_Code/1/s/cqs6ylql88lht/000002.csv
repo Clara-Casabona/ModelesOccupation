@@ -1,7 +1,0 @@
-"0","# Liste de mod?les pour la d?tection "
-"0","m0 <-  colext(~ 1, ~ 1, ~ 1, ~ JJ, data = grue.data)"
-"0","m1 <-  colext(~ 1, ~ 1, ~ 1, ~ JJ + Met_eff-1, data = grue.data)"
-"0","m2 <-  colext( ~ 1,  ~ 1, ~ 1, ~ JJ + Eff,  data = grue.data)"
-"0","m3 <- colext(psiformula = ~ 1, ~ 1, ~ 1, ~ JJ + Met -1, data = grue.data)"
-"2","Error in phis[, , t, i] : no 'dimnames' attribute for array
-"
