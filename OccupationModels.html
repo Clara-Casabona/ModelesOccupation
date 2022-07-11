@@ -60,14 +60,20 @@ install.packages(c("unmarked",
 
 &lt;br&gt;
 
-.pull-left2[
+&lt;br&gt;
+
+&lt;br&gt;
+
+
+
+.pull-left[
 Tout au long de cet atelier, il y aura une série de **défis** et des  **questions** que vous pouvez reconnaître par ce rubix cube.
 
 ]
 
-.pull-right2[
+.pull-right[
 .center[
-![:scale 45%](images/rubicub.png)
+![:scale 100%](images/rubicub.png)
 
 ]
 
@@ -77,9 +83,7 @@ Tout au long de cet atelier, il y aura une série de **défis** et des  **questi
 
 &lt;br&gt;
 
-.center[
-**Lors de ces défis, n'hésitez pas à collaborer !**.
-]
+
 
 ---
 # Objectifs d'apprentissage
@@ -142,7 +146,7 @@ Tout au long de cet atelier, il y aura une série de **défis** et des  **questi
 # Qu'est-ce que vous observez?
 
 --
-
+&lt;br&gt;
 
 | V1 | V2  | V3  | Conif |  Temp1      |  Temp2 | Temp3  | jj1 | jj2 | jj3|
 |:-----: | :---:     |:--:    |  :------:  |:------: |:-----:| :---:  |:--:   |:-----:| :---:    |
@@ -151,12 +155,8 @@ Tout au long de cet atelier, il y aura une série de **défis** et des  **questi
  | 0        | 0         |  0     |  0.2     | 8.6      | 8.3     | 9.3    |  11    |11      | 25       | 
 
 --
+.center[![:scale 80%](images/infodataset.png)]
 
-* 60 Observations
-* 3 Visites (*V1*, *V2*, *V3*) par ligne
-* Une variable environnementale (*Conif* = pourcentage de conifères dans le site)
-* 3 Variables de temperature (*Temp1*, *Temp2*, *Temp3*)
-* 3 Variables de jour julien (*jj1*, *jj2*, *jj3*)
 
 ---
 # Pourquoi choisir un modèle d'occupation de sites?
@@ -194,6 +194,16 @@ Mais .alert[attention]!  Une **non-détection** peut être due au fait que l'esp
  
 ---
 # Pourquoi choisir un modèle d'occupation de sites?
+.pull-right2[
+
+&lt;br&gt;
+&lt;br&gt;
+&lt;br&gt;
+&lt;br&gt;
+.center[![:scale 100%](images/observatinespece.png)]
+
+]
+.pull-left2[
 
 &lt;br&gt;
 
@@ -202,16 +212,16 @@ Mais .alert[attention]!  Une **non-détection** peut être due au fait que l'esp
 
 &lt;br&gt;
 
---
+
 
 - Les estimations des relations de covariables sont biaisées vers zéro chaque fois que p &lt; 1
 
 &lt;br&gt;
 
---
+
 
 - Les facteurs qui affectent la détection de l'espèce peuvent se retrouver dans des modèles prédictifs d'occurrence d'espèces
- 
+ ]
 ---
 # Pourquoi choisir un modèle d'occupation de sites?
 
@@ -269,15 +279,14 @@ class: inverse, center, middle
 
 ## Comment fonctionnent les modèles d'occupation?
 
-&lt;br&gt;
 
-Les modèles d'occupation modélisent conjointement le **processus écologique d'occurrence** des espèces ( `\(\psi\)`) et le **processus d'observation** de la détection des espèces ( `\(p\)`), mais les estiment comme des processus distincts. 
+Les modèles d'occupation modélisent conjointement le **processus biologique d'occurrence** des espèces `\((\psi)\)` et le **processus d'observation** de la détection des espèces `\((p)\)`, mais les estiment comme des processus distincts. 
 
-
- --
+--
  
 &lt;br&gt;
-Le processus biologique de présence donné par la probabilité d'occupation 
+
+Le **processus biologique** de présence donné par la probabilité d'occupation `\((\psi_i)\)`
 
 
 .center[ 
@@ -285,16 +294,20 @@ Le processus biologique de présence donné par la probabilité d'occupation
 ]
 
 --
+ 
+&lt;br&gt;
 
-Le processus d'observation donné par la "vrai" présence * probabilité observations `\(p_{ij}\)`
+Le **processus d'observation** donné par le *processus biologique* et la probabilité de détection `\((p_{ij})\)`
 
 .center[
-`\(y_{ij} ∼ Bernoulli(Z_i∗p_{ij})\)`
+`\(d_{ij} ∼ Bernoulli(Z_i∗p_{ij})\)`
 ]
 
+&lt;br&gt;
 
+.center[
 Les deux processus peuvent être modélisés avec des covariables. 
-
+]
 
 ---
 
@@ -302,8 +315,9 @@ Les deux processus peuvent être modélisés avec des covariables.
 
 ## Comment estimer la probabilité de détection ?
 
+--
 
-### 1. Dispositif d'échantillonage: 
+#### 1. Dispositif d'échantillonage: 
 
 --
 
@@ -316,7 +330,7 @@ Les deux processus peuvent être modélisés avec des covariables.
 
 --
 
-### 2. Générer la matrice  de détection
+#### 2. Générer la matrice  de détection
 
 
 | Site ID | Visite 1      | Visite 2      | Visite 3    |
@@ -333,7 +347,7 @@ Les deux processus peuvent être modélisés avec des covariables.
 
 ## Comment estimer la probabilité de détection ?
 
-### 3. Estimer la probabilité de détection 
+#### 3. Estimer la probabilité de détection 
 
 | Site ID | Visite 1      | Visite 2      | Visite 3    |
 |:------: |:-----:| :-------------:|:-------------:|
@@ -348,12 +362,14 @@ La probabilité d'observer l'historique ( `\(h\)` ) de l'espèce dans le site A:
 
 
 $$ Pr(h_A=110)  = \psi \: p_1 \:  p_2 \: (1-p_3)$$
-.center[ `\(\psi\)` = Probabilité d'occupation
-
-`\(p\)`  = Probabilité de détection]
+.center[ `\(\psi\)` = Probabilité d'occupation, `\(p\)`  = Probabilité de détection]
 
 &lt;br&gt;
 
+E.g:
+`\(\psi\)` = 1 et `\(p\)`  = 0.7
+
+$$ Pr(h_A=110)  = 1* 0.7*0.7*(1-0.7)  = $$
 --
 
 Mais qu’est-ce qu’on fait avec les endroits qu'il y a aucune observation?
@@ -366,7 +382,7 @@ Mais qu’est-ce qu’on fait avec les endroits qu'il y a aucune observation?
 ## Comment estimer la probabilité de détection ?
 
 
-### 3. Estimer la probabilité de détection 
+#### 3. Estimer la probabilité de détection 
 
 ##### Sites sans aucune détection
 
@@ -391,7 +407,7 @@ Il y a 2 possibilités:
 ## Comment estimer la probabilité de détection ?
 
 
-### 3. Estimer la probabilité de détection 
+#### 3. Estimer la probabilité de détection 
 
 ##### Sites sans aucune détection
 
@@ -676,7 +692,7 @@ Pour trouver `\(\psi\)`, on calcule
 # Modéliser l’occupation et la détection
 
 .center[
-`\(y_{ij} ∼ Bernoulli(Z_i∗p_{ij})\)`
+`\(d_{ij} ∼ Bernoulli(Z_i∗p_{ij})\)`
 ]
 
 Modèle avec détection constante (intercepte seulement):
@@ -705,17 +721,73 @@ Pour trouver `\(p\)`, on calcule
 ---
 class: inverse, center, middle
 
-# Application  des modèles de base avec `R`
+# Application  des modèles avec `R`
 
-##  Utilisation de unmarked et AICcmodavg packages
+ Avec l'utilisation des packages: 
+ 
+### `unmarked`  
+
+### `AICcmodavg` 
 
 ---
-
-# Approche
+# `unmarked`
 
 &lt;br&gt;
 
-1. Importer les données + Formatage 
+`unmarked` package, ajuste les modèles hiérarchiques d'occurrence et d'abondance des espèces qui considèrent la détection imparfaite. 
+
+&lt;br&gt;
+
+Ces modèles sont:
+
+
+- **Modèles d'occupation à une saison**
+
+
+- Modèles d'occupation  dynamiques
+
+
+- Modèles N-mixture à une saison
+
+
+- Modèles N-mixture dynamiques
+
+
+
+.footnote[Ces modèles ont été développés à l'origine par [Mackenzie et al.  (2006)](https://pubs.er.usgs.gov/publication/5200296) et [Royle et Darzio (2008)](https://pubs.er.usgs.gov/publication/5200344) . La principale référence pour le package est [Fiske et Chandler (2011)](https://www.jstatsoft.org/article/view/v043i10).]
+
+
+---
+# `AICcmodavg`
+
+&lt;br&gt;
+
+`AICcmodavg` package, contient des fonctions pour:
+
+&lt;br&gt;
+
+- Implémenter la **sélection de modèles et l'inférence multimodèle** basée sur le critère d'information d'Akaike (AIC) et l'AIC de second ordre (AICc).
+
+- Étudier la  **qualité d'ajustement** pour les modèles  classes «unmarkedFit».
+
+
+
+
+.footnote[Ces modèles ont été développés à l'origine par [Anderson, D. R. (2008)](https://link.springer.com/book/10.1007/978-0-387-74075-1), [Burnham, K. P., and Anderson, D. R. (2002)](https://link.springer.com/book/10.1007/b97636)  et [Burnham, K. P., Anderson, D. R. (2004)](https://journals.sagepub.com/doi/10.1177/0049124104268644) . La principale référence pour le package est [Marzerolle, M. J. (2017)](https://cran.r-project.org/web/packages/AICcmodavg/AICcmodavg.pdf).]
+
+
+
+
+
+
+---
+
+
+# Approche 
+
+&lt;br&gt;
+
+1. Importer et formater les données
 
 2. Création et exécution des modèles
 
@@ -729,19 +801,31 @@ class: inverse, center, middle
 
 ---
 
-# 1.1 Importer et explorer les données
+# 1. Importer et formater les données
 
 
 &lt;br&gt;
 
 
+.pull-left[
+
 
 ```r
 library(unmarked)
-borchi &lt;- read.csv("borchi.csv", header = TRUE)
+library(AICcmodavg)
+
+borchi &lt;- read.csv("borchi.csv", 
+                   header = TRUE)
 str(borchi)
 ```
 
+]
+
+.pull-right[
+
+.center[![:scale 50%](images/DSC_0605.jpg)]
+
+]
 
 
 &lt;br&gt;
@@ -757,14 +841,50 @@ str(borchi)
 
 ---
 
-# 1.2 Formatage des données
+# 1. Importer et formater les données
 
--  Standardisation des variables
+&lt;br&gt;
 
+1.1 Standardisation des variables
+
+&lt;br&gt;
+
+
+1.2 Vérification des correlations entre variables
+
+&lt;br&gt;
+
+
+1.3 Formater les données avec la fonction `unmarkedFrameOccu()` 
+
+&lt;br&gt;
+
+
+1.4a Explorer l'objet `unmarkedFrameOccu` avec `summary()`
+
+1.4b Explorer l'objet `unmarkedFrameOccu` avec `detHist()`
+---
+
+# 1. Importer et formater les données
+
+
+##### 1.1 Standardisation des variables
+--
+
+Comparer deux variables quantitatives.
+
+.center[![:scale 80%](images/standardisation.png)]
+
+---
+
+# 1. Importer et formater les données
+
+
+##### 1.1 Standardisation des variables
 --
 
 
-Variable de Site (Conifer)
+Variables de Site (Conifer)
 
 
 ```r
@@ -792,14 +912,41 @@ jj_sd   &lt;- sd(as.vector(as.matrix(jj)))
 jj_std  &lt;- (jj - jj_mean)/jj_sd
 ```
 
+---
 
+# 1. Importer et formater les données
+
+#####  1.2 Vérification des correlations entre variables
+
+Dans notre exemple, on doit regarder la corrélation entre jour julien et température
+
+
+```r
+mapply(cor,as.data.frame(temp_std), as.data.frame(jj_std))
+```
+
+OUTPUT: 
+
+&lt;br&gt;
+
+| temp1 - jj1 | temp2 - jj2  | temp2 - jj2  |
+|:-----: |:-----: |:-----: |
+|-0.05150491 | 0.11642357 | -0.02352764 |
+
+&lt;br&gt;
+
+S’assurer que les variables ne sont pas corrélées entre elles
+
+- Éviter d’inclure des variables corrélées (|r| &gt; 0.7) sur le même paramètre `\(( \psi\)` ou `\(p)\)`
+
+- Possible d’ajouter la même variable sur différents paramètres
 
 ---
 
-# 1.2 Formatage des données
+# 1. Importer et formater les données
 
 
-- Formater les données avec la fonction `unmarkedFrameOccu()` du package `unmarked`
+#####  1.3 Formater les données avec la fonction `unmarkedFrameOccu()` 
 
 
 &lt;br&gt;
@@ -813,17 +960,18 @@ borchi_data &lt;- unmarkedFrameOccu(y = borchi[, c(1:3)],
 
 Dans la fonction:
 
-- `y`  contient les données d'observation (0, 1) des visites. Elle peut être une matrice ou un data.frame. 
+- `y`  contient les données d'observation (0, 1). *Matrice ou un data frame.* 
 
-- `siteCovs` doit être un data.frame ou matrice  avec les variables liées au site
+- `siteCovs` contient les variables liées au site. *Matrice ou un data frame.* 
 
-- `obsCovs` doit être une liste de data.frame ou matrice avec les variables liées à l'observation.
+- `obsCovs` contient les variables liées à l'observation. *Liste de matrice ou  data frames.* 
+
 
 ---
 
-# 1.2 Formatage des données
+# 1. Importer et formater les données
 
-Explorer l'objet `unmarkedFrameOccu` avec `summary(borchi_data)`
+##### 1.4a Explorer l'objet `unmarkedFrameOccu` avec `summary()`
 
 
 ```
@@ -870,15 +1018,15 @@ Observation-level covariates:
 
 ---
 
-# 1.2 Formatage des données
+# 1. Importer et formater les données
 
-- Explorer l'object `unmarkedFrameOccu` avec `detHist` du package `AICcmodavg`
+#####  1.4b Explorer l'object `unmarkedFrameOccu` avec `detHist`
 
 &lt;br&gt;
 
 
 ```r
-detHist(borchi_data)
+detHist(borchi_data) # package `AICcmodavg`
 ```
 
 Output:
@@ -900,7 +1048,7 @@ Season-1      60       34
 
 # 2. Création et exécution des modèles
 
--  Creation des modèles
+##### 2.1 Creation des modèles
 
 &lt;br&gt;
 
@@ -928,7 +1076,7 @@ mod_complet &lt;- occu( ~ Temp_std + Heur_std  ~ Conif, data = borchi_data)
 ---
 # 2. Création et exécution des modèles
 
-### Inspecter les modèles
+##### 2.2 Inspecter les modèles
 
 ```
 summary(mod_null)
@@ -954,7 +1102,7 @@ Bootstrap iterations: 0
 ---
 # 2. Création et exécution des modèles
 
-### Inspecter les modèles
+##### 2.2 Inspecter les modèles
 
 .alert[**1. Quelle est la probabilité d'observer une mésange à tête brune dans une série de sites?**]
 
@@ -983,7 +1131,7 @@ plogis(1.37)
 ---
 # 2. Création et exécution des modèles
 
-### Inspecter les modèles
+##### 2.2 Inspecter les modèles
 ```
 summary(mod_complet)
 
@@ -1062,7 +1210,7 @@ obtenus par bootstrap paramétrique (ĉ = 1.11)
 
 # 4. Sélection de modèles
 
-Avec la fonction  `aictab()` du package `AICcmodavg` on fait une sélection  avec l'AICc.
+##### Sélection AICc avec la fonction  `aictab()` 
 
 &lt;br&gt;
 
@@ -1131,7 +1279,7 @@ Model sélection based on QAICc:
 
 # 5. Inférence multimodèle
 
-Estimation pondérée de chaque variable du modèle - fonction `modavgShrink()`. 
+##### Estimation pondérée de chaque variable du modèle - `modavgShrink()`. 
 
 --
 
@@ -1161,11 +1309,31 @@ Model-averaged estimate with shrinkage: 6.84
 Unconditional SE: 2.81 
 95% Unconditional confidence interval: 1.33, 12.35
 ```
---
+---
+# 5. Inférence multimodèle - Question ![:cube]()
 
 .alert[Est-ce qu'il y a un effet du *pourcentage de conifères* dans l'occupation de la mésange?]
 
+```
+Multimodel inference on "psi(conifer_std)" based on QAICc
 
+QAICc table used to obtain model-averaged estimate with shrinkage:
+	(c-hat estimate = 1.11)
+
+            K  QAICc Delta_QAICc QAICcWt Estimate   SE
+mod_null    3 170.87       62.47    0.00     0.00 0.00
+mod_occ     4 108.84        0.44    0.44     6.97 2.82
+mod_det     5 134.52       26.13    0.00     0.00 0.00
+mod_complet 6 108.40        0.00    0.56     6.73 2.80
+
+Model-averaged estimate with shrinkage: 6.84 
+Unconditional SE: 2.81 
+95% Unconditional confidence interval: 1.33, 12.35
+```
+--
+&lt;br&gt;
+
+**Réponse** : *Oui!* Le 0 n'est pas inclus dans l'interval de confiance (1.33, 12.35), on peut dire qu'il y a un effet positif du pourcentage de conifères dans la probabilité d'occupation de  la mésange. 
 ---
 
 # 5. Inférence multimodèle - Défi ![:cube]()
@@ -1235,7 +1403,7 @@ Unconditional SE: 0.41
 
 --
 
-**Response:** Le 0 se trouve dans l'interval de confidence. Il n'y a pas un effet du jour julien dans la probabilité de détection.
+**Response:** Le 0 se trouve dans l'interval de confiance Il n'y a pas un effet du jour julien dans la probabilité de détection.
 
 
 ---
@@ -1247,31 +1415,31 @@ Pour faire des prédictions pondérées en utilisant tous les modèles, il faut 
 
 &lt;br&gt;
 
-**1. Crée un nouveau jeu de données**
+**6.1. Crée un nouveau jeu de données**
 
 &lt;br&gt;
 
-**2. Calculer les prédictions avec `modavgPred()`**
+**6.2. Calculer les prédictions avec `modavgPred()`**
 
 &lt;br&gt;
 
-**3. Résumer les résultats dans un graphique**
+**6.3. Résumer les résultats dans un graphique**
 
 ---
 
 # 6. Prédictions
 
-### 1. Crée un nouveau jeu de données
+### 6.1. Crée un nouveau jeu de données
 
-Utiliser une séquence de la variable d'intérêt  (min to max)  et ajouter les valeurs standardisées pour faire les estimations
+Utiliser une séquence de la variable d'intérêt  (min - max)  et ajouter les valeurs standardisées pour faire les estimations
 
 
 ```r
 new_dats &lt;- data.frame(temp = 
                          seq(from = min(temp),
                              to = max(temp), 
-                             length.out = 30),
-                       jj_std = 0)  # Variables fixés
+                             length.out = 30), # Séquence de la variable d'intérêt
+                       jj_std = 0)  # Variables fixées
                        
 new_dats$temp_std &lt;- (new_dats$temp - temp_mean)/temp_sd # Valeurs standardisées
 ```
@@ -1279,7 +1447,7 @@ new_dats$temp_std &lt;- (new_dats$temp - temp_mean)/temp_sd # Valeurs standardis
 
 # 6. Prédictions
 
-### 2. Calculer les prédictions avec `modavgPred()`
+### 6.2. Calculer les prédictions avec `modavgPred()`
 
 
 ```r
@@ -1304,11 +1472,21 @@ new_dats$upp95 &lt;- preds$upper.CL
 
 # 6. Prédictions
 
-### 3. Résumer les résultats dans un graphique
+### 6.3. Résumer les résultats dans un graphique
 
 
 
-.center[![:scale 80%](images/Ptemp.png)]
+```r
+ggplot(new_dats, aes(temp)) + 
+  geom_line(aes(y = mod_avg_pred), colour = "blue") + 
+  geom_ribbon(aes(ymin = low95, ymax = upp95), alpha = 0.2) +
+  ylim(0,1) +   labs(y = expression("Probabilité de détection" (p)), 
+                     x = "Température de l'air") +
+  theme_bw()
+```
+
+
+.center[![:scale 60%](images/Ptemp.png)]
 
 
 ---
@@ -1416,7 +1594,7 @@ ggplot(new_dats, aes(conif)) +
 ---
 class: inverse, center, middle
 
-# Rapide présentation des modèles d'occupation dynamique 
+# Introduction aux modèles d'occupation dynamique 
 
 ---
 
@@ -1500,19 +1678,19 @@ class: inverse, center, middle
 ```r
 grue_data &lt;- unmarkedMultFrame(y = det, 
                                siteCovs = SiteCovs_s,
-                               obsCovs  = list(Met = Met, ..., JJ = JJ.std),
-                               yearlySiteCovs = list(year = year.std, ...), 
+                               obsCovs  = list(Met = Met, ..., JJ = JJ),
+                               yearlySiteCovs = list(year = year, ...), 
                                numPrimary = 16)
 ```
 
 Dans la fonction:
 
 .xsmall[
-- `y` :  contient les données d'observation (0, 1) 
-- `siteCovs` :  data.frame ou matrice  avec les variables liées au site
-- `obsCovs` :  liste de data.frame ou matrice avec les variables liées à l'observation.
-- `yearlySiteCovs` :  liste de data.frame ou matrice avec les variables liées à l'observation.
-- `numPrimary`:  liste de data.frame ou matrice avec les variables liées à l'observation.
+- `y` :  contient les données d'observation (0, 1).  *Matrice ou un data frame.*  
+- `siteCovs` :  contient les variables liées au site. *Matrice ou un data frame.* 
+- `obsCovs` :  contient c les variables liées à l'observation.  *Liste de matrices ou un data frames.* 
+- `yearlySiteCovs` :  contient les variables liées au site et année *Liste de matrices ou un data frames.* 
+- `numPrimary`:  contient  le nombre d'années *Valeur numerique* 
 ]
 ---
 # Modèles d'occupation dynamique
@@ -1525,7 +1703,7 @@ Utilizant la fonction `colex()`, elements :
 &lt;br&gt;
 &lt;br&gt;
 
-occu(~ `\(\psi(.)\)` ~ `\(\gamma(.)\)` ~ `\(\epsilon(.)\)` ~ `\(p(.)\)` , data)
+.center[occu(~ `\(\psi(.)\)` ~ `\(\gamma(.)\)` ~ `\(\epsilon(.)\)` ~ `\(p(.)\)` , data)]
 
 &lt;br&gt;
 &lt;br&gt;
@@ -1538,6 +1716,36 @@ model &lt;-colext(psiformula   =  ~ MHo_p,
                pformula = ~JJ + Met_eff,
                data = grue_data) 
 ```
+
+---
+# Modèles d'occupation dynamique
+
+#### Attention aux problèmes de convergence !
+
+Exemple message d'erreur:
+
+```
+In function (object) :
+Model did not converge. Try providing starting values or increasing maxit control argment.
+```
+
+Détection des problèmes de convergence :
+
+- `\(\beta\)` très grand (|20|)
+
+- SE des estimés démesurées par rapport à l’estimé (&gt; 50)
+
+- `\(\beta\)` ou SE avec NaN
+
+-- 
+
+Causes:
+
+- Variables non standardisées
+
+- Classification parfaite
+
+- Modèle trop complexe pour les données 
 
 
 ---
@@ -1555,13 +1763,13 @@ model &lt;-colext(psiformula   =  ~ MHo_p,
 ####  Résultats (Inférence multimodèle + figures)
 
 .pull-left[
-![:scale 75%](images/occdyndet.png)
-![:scale 75%](images/psidyn.png)
+![:scale 100%](images/occdyndet.png)
+![:scale 100%](images/psidyn.png)
 ]
 
 .pull-right[
-![:scale 75%](images/epsdyn.png)
-![:scale 75%](images/coldyn.png)
+![:scale 100%](images/epsdyn.png)
+![:scale 100%](images/coldyn.png)
 ]
 
 
@@ -1574,6 +1782,9 @@ class: inverse, center, middle
 
 # Autres modèles (estimant les abondances)
 
+
+&lt;br&gt;
+
 * Modèle d’hétérogénéité de Royle-Nichols
 
 * Modèle N-mixture pour décomptes à une saison
@@ -1584,7 +1795,7 @@ class: inverse, center, middle
 
 * Distance sampling
 
-Ces modèles seront présentés dans les prochains mois, notamment lors des prochains ateliers R du CSBQ. 
+Ces modèles seront présentés  lors des prochains ateliers R du CSBQ. 
 
 
 ---
@@ -1597,9 +1808,11 @@ Ces modèles seront présentés dans les prochains mois, notamment lors des proc
 
 ##### Developers and contributors
 
-This template has been originally developed by [Marie Hélène Brice](mailto:) and [Kevin Cazelles](mailto:) and improved with the CSS and the JS  by [Pedro H. P. Braga](mailto:).
+Cette présentation a été dévelopé par [Clara Casabona Amat](mailto:)
 
-See [here and below](https://github.com/QCBSRworkshops/templateWorkshops/graphs/contributors) to find all contributors and developers of this template.
+Ce template a été développé à l'origine par [Marie Hélène Brice](mailto:) and [Kevin Cazelles](mailto:) et amélioré avec le CSS et le JS par [Pedro H. P. Braga](mailto:).
+
+Voir [here and below](https://github.com/QCBSRworkshops/templateWorkshops/graphs/contributors) pour trouver tous les contributeurs et développeurs de ce template.
 ]
 
 
@@ -1608,7 +1821,7 @@ See [here and below](https://github.com/QCBSRworkshops/templateWorkshops/graphs/
 ---
 class: inverse, center, bottom
 
-# Thank you for your implication!
+# Merci pour votre implication!
 
 &lt;hr&gt;
 
