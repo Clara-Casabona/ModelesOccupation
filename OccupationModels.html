@@ -830,7 +830,7 @@ str(borchi)
 
 &lt;br&gt;
 
-| V1 | V2  | V3  | Conifer |  temp1      |  temp2 | temp3  | jj1 | jj2 | jj3|
+| V1 | V2  | V3  | conif |  temp1      |  temp2 | temp3  | jj1 | jj2 | jj3|
 |:-----: | :---:     |:--:    |  :------:  |:------: |:-----:| :---:  |:--:   |:-----:| :---:    |
  | 1        | 1         |  0     |  0.5     | 7.5       | 8.6    | 7.9      | 8    |13      | 25       |  
  | 1        | 0         | 0      |  1.0     |10.9      | 10.1     | 11.3     |11     |22     | 26        | 
@@ -884,7 +884,7 @@ Comparer deux variables quantitatives.
 --
 
 
-Variables de Site (Conifer)
+Variables de Site (conif)
 
 
 ```r
@@ -1048,7 +1048,7 @@ Season-1      60       34
 
 # 2. Création et exécution des modèles
 
-##### 2.1 Creation des modèles
+##### 2.1 Création des modèles
 
 &lt;br&gt;
 
@@ -1064,13 +1064,13 @@ Elements :  occu(~ `\(p(.)\)` ~ `\(\psi(.)\)` , data)
 
 
 ```r
-mod_null    &lt;- occu( ~ 1  ~ 1,     data = borchi_data)
+mod_null  &lt;- occu( ~ 1 ~ 1,     data = borchi_data)
 
-mod_occ     &lt;- occu( ~ 1  ~ Conif, data = borchi_data)
+mod_occ   &lt;- occu( ~ 1 ~ conifer_std, data = borchi_data)
 
-mod_det     &lt;- occu( ~ Temp_std + Heur_std  ~ 1, data = borchi_data)
+mod_det   &lt;- occu( ~ temp_std + jj_std  ~ 1, data = borchi_data)
 
-mod_complet &lt;- occu( ~ Temp_std + Heur_std  ~ Conif, data = borchi_data)
+mod_complet   &lt;- occu(  ~ temp_std + jj_std ~ conifer_std, data = borchi_data)
 ```
 
 ---
@@ -1492,7 +1492,7 @@ ggplot(new_dats, aes(temp)) +
 ---
 #  6. Prédictions -Défi  ![:cube]()
 
-Représente l'effet du pourcentage de conifères (Conifer) sur la probabilité d'occupation de la mésange à tête brune.
+Représente l'effet du pourcentage de conifères (conif) sur la probabilité d'occupation de la mésange à tête brune.
 
 &lt;br&gt;
 
@@ -1696,7 +1696,7 @@ Dans la fonction:
 # Modèles d'occupation dynamique
 
 
-####  Creation des modèles
+####  Création des modèles
 
 Utilizant la fonction `colex()`, elements :  
 

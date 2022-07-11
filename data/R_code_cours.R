@@ -1,15 +1,15 @@
 # Code R de l'atelier Modèles d'occupation
 
 ###Avis ###
-                                                                            
-# Ceci est un script afin de suivre les diferents codes présenters pendant
+
+# Ceci est un script afin de suivre les différents codes présenter pendant
 # l'atelier. 
 #                                                                             #
 # Il est minimalement annoté pour permettre aux participants de fournir leurs #
 # commentaires : une pratique que nous encourageons vivement.                 #
 #                                                                             #
 # Notez que les solutions aux défis ne sont pas incluses dans ce script.     #
-# Les solutions vont être révelés lors de l'atelier                           #
+# Les solutions vont être révélées lors de l'atelier                           #
 #                                                                             #
 # Bon codage !  
 
@@ -27,7 +27,6 @@ library(ggplot2)
 
 borchi <- read.csv("borchi.csv", header = TRUE) 
 
-# Cette ligne variera en fonction de l'endroit où vos données sont enregistrées. 
 # Vérifiez votre répertoire de travail avec getwd(), et changez-le avec setwd() au besoin.
 
 # Explorez les données 
@@ -36,8 +35,9 @@ str(borchi)
 summary(borchi)
 
 
+##################
 
-# Likelihood 
+# Explication du likelihood 
 
 probDet <-seq(from=0, to=1, by=0.01)
 
@@ -53,10 +53,16 @@ MLE = probDet[which(LL==max(LL))]
 
 abline(v = MLE, col="red", lwd=3, lty=2)
 
+##############################################
+##############  Défi likelihood###############
+##############################################
 
-# Formatage des données
 
-### Standardisé les variables
+
+
+#  1. Formater les données
+
+### 1.1 Standardisation des variables
 
 conifer_mean <- mean(borchi$conif)
 conifer_sd <- sd(borchi$conif)
@@ -75,21 +81,24 @@ jj_mean <- mean(as.vector(as.matrix(jj)))
 jj_sd <- sd(as.vector(as.matrix(jj)))
 jj_std <- (jj - jj_mean)/jj_sd
 
+### 1.2 Vérification des correlations entre variables
 
-# Formater les données avec la fonction unmarkedFrameOccu() du package unmarked
+mapply(cor,as.data.frame(temp_std), as.data.frame(jj_std))
+
+### 1.3 Formater les données avec la fonction unmarkedFrameOccu() du package unmarked
 
 borchi_data <- unmarkedFrameOccu(y = borchi[, c(1:3)],
                                  siteCovs =   conifer_std,
                                  obsCovs = list(temp_std =temp_std,
                                                 jj_std=jj_std))
-#  Explorer l'objet
+### 1.4 Explorer l'objet
 
 detHist(borchi_data)
 
 summary(borchi_data)
 
 
-# Création des modèles
+# 2.1 Création des modèles
 
 mod_null  <- occu( ~ 1 ~ 1,     data = borchi_data)
 
@@ -100,7 +109,7 @@ mod_det   <- occu( ~ temp_std + jj_std  ~ 1, data = borchi_data)
 mod_complet   <- occu(  ~ temp_std + jj_std ~ conifer_std, data = borchi_data)
 
 
-# Inspecter les modèles
+# 2.2 Inspecter les modèles
 
 summary(mod_null)
 summary(mod_occ)
@@ -108,18 +117,19 @@ summary(mod_det)
 summary(mod_complet)
 
 
-# Test d'ajustement
+# 3. Test d'ajustement
 
 ### Attention! Cette étape peut prendre quelques minutes à rouler (ou heures si le jeu de données et le nombre de simulations sont très grands)
 
 gof <- mb.gof.test(mod_complet, nsim = 10, plot.hist = TRUE) # 10 simulations c'est pas assez! Mais si vous faites rouler cette ligne avec juste 10 cela va prendre seulement quelques secondes
+
 gof
 
 save(gof, file = "mod_complet_gof.Rdata")
 
 gof$chisq.tab
 
-# Sélection de modèles
+# 4. Sélection des modèles
 
 Modeles <- list(mod_null, mod_occ, mod_det, mod_complet)
 
@@ -127,36 +137,34 @@ Names   <- c("mod_null","mod_occ","mod_det","mod_complet")
 
 aictab(cand.set = Modeles, modnames = Names, c.hat = 1.11)
 
-# Inférence multimodèle
+# 5. Inférence multimodèle
 
 modavgShrink(cand.set = Modeles, modnames = Names,
              c.hat = 1.11, parm = "conifer_std",
              parm.type = "psi")
 
-
-# Inférence multimodèle  Défi
-
-modavgShrink(cand.set = Modeles, modnames = Names,
-             c.hat = 1.11, parm = "temp_std",
-             parm.type = "detect")
+###########################################################
+########### 5. Inférence multimodèle  -  Défi #############
+###########################################################
 
 
-# Predictions
 
-## Pour la temperature
 
-### Crée un nouveau jeu de données
+
+# 6. Prédictions
+
+### 6.1 Crée un nouveau jeu de données et  ajouter les valeurs standardisées pour faire les estimations
 
 new_dats <- data.frame(temp = 
                          seq(from = min(temp),
                              to = max(temp), 
                              length.out = 30),
                        jj_std = 0) 
-####  Ajouter les valeurs standardisées pour faire les estimations
 
 new_dats$temp_std <- (new_dats$temp - temp_mean)/temp_sd
 
-###  Calculer les prédictions avec modavgPred()
+###  6.2 Calculer les prédictions avec modavgPred()
+
 preds <- modavgPred(cand.set = Modeles, modnames = Names,
                     c.hat = 1.11, newdata = new_dats, 
                     type = "response", parm.type = "detect")
@@ -166,7 +174,7 @@ new_dats$uncond_se <- preds$uncond.se
 new_dats$low95 <- preds$lower.CL
 new_dats$upp95 <- preds$upper.CL
 
-### Résumer les résultats dans un graphique
+### 6.3 Résumer les résultats dans un graphique
 
 ggplot(new_dats, aes(temp)) + 
   geom_line(aes(y=mod_avg_pred), colour="blue") + 
@@ -177,35 +185,9 @@ ggplot(new_dats, aes(temp)) +
                             degree, "C)"))) +
   theme_bw()
 
-# Predictions - Défi
 
+###########################################################
+######## Predictions - Pourcentage de conifères ###########
+###########################################################
 
-### Pourcentage de conifères
-
-new_dats <- data.frame(conif = 
-                         seq(from = min(borchi$conif),
-                             to = max(borchi$conif), 
-                             length.out = 30)) 
-new_dats$conifer_std <- (new_dats$conif - conifer_mean)/conifer_sd
-
-preds <- modavgPred(cand.set = Modeles,
-                    modnames = Names,
-                    c.hat = 1.11, 
-                    newdata = new_dats, 
-                    type = "response", 
-                    parm.type = "psi")
-
-new_dats$mod_avg_pred <- preds$mod.avg.pred
-new_dats$uncond_se <- preds$uncond.se
-new_dats$low95 <- preds$lower.CL 
-new_dats$upp95 <- preds$upper.CL
-
-## Plot predictions
-ggplot(new_dats, aes(conif)) + 
-  geom_line(aes(y=mod_avg_pred), colour="blue") + 
-  geom_ribbon(aes(ymin=low95, ymax=upp95), alpha=0.2) +
-  ylim(0,1) + 
-  labs(y =expression("Probabilité d'occupation" (psi)), 
-       x = "% Conifères dans la parcelle") +
-  theme_bw()
 
