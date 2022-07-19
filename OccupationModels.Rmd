@@ -124,35 +124,6 @@ Tout au long de cet atelier, il y aura une série de **défis** et des  **questi
 
 
 ---
-# Exploration du jeu de données ![:cube]()
-
-**Familiarisez-vous avec le jeu de données**
-
-**1.** Ouvrez le script de l'atelier dans `R`
-
-**2.** Ouvrez le jeu de données `borchi.csv` dans `R`
-
-**3.** Explorez la structure du jeu de données
-
---
-
-
-# Qu'est-ce que vous observez?
-
---
-<br>
-
-| V1 | V2  | V3  | Conif |  Temp1      |  Temp2 | Temp3  | jj1 | jj2 | jj3|
-|:-----: | :---:     |:--:    |  :------:  |:------: |:-----:| :---:  |:--:   |:-----:| :---:    |
- | 1        | 1         |  0     |  0.5     | 7.5       | 8.6    | 7.9      | 8    |13      | 25       |  
- | 1        | 0         | 0      |  1.0     |10.9      | 10.1     | 11.3     |11     |22     | 26        | 
- | 0        | 0         |  0     |  0.2     | 8.6      | 8.3     | 9.3    |  11    |11      | 25       | 
-
---
-.center[![:scale 80%](images/infodataset.png)]
-
-
----
 # Pourquoi choisir un modèle d'occupation de sites?
 
 
@@ -216,6 +187,7 @@ Mais .alert[attention]!  Une **non-détection** peut être due au fait que l'esp
 
 - Les facteurs qui affectent la détection de l'espèce peuvent se retrouver dans des modèles prédictifs d'occurrence d'espèces
  ]
+
 ---
 # Pourquoi choisir un modèle d'occupation de sites?
 
@@ -266,6 +238,83 @@ Si le site est occupé, à chaque visite $j$;
 class: inverse, center, middle
 
 # Modèles d'occupation de sites
+
+---
+
+# Modèles d'occupation de sites
+
+## Origine
+
+
+Analyses de **capture-marquage-recapture (CMR)** pour populations fermées 
+
+--
+
+Exemple : *On veut savoir combien de tortues il y a dans une population*
+
+.pull-left[
+
+![:scale 75%](images/cmrexample.png)
+
+]
+
+.pull-right[
+
+**Jour 1** = capture 10 tortues + ajoute un point blanc  + libération (M)
+
+**Jour 2** = capture 20 tortues (S) (6 avec le point blanc (R))
+]
+
+--
+
+.pull-left2[
+En utilisant **l'index de Lincoln-Peterson** : 
+
+$$N = \frac{M*S}{R}$$
+
+]
+
+--
+
+.pull-right2[
+
+On estime qu'il y a **33 tortues**
+
+]
+
+
+---
+
+# Modèles d'occupation de sites
+
+<br>
+
+Mais, qu’est-ce qu’il arrive si on ne peut pas capturer les individus? 
+
+
+--
+
+**On peut travailler avec les sites (modèles d'occupation)!**
+
+--
+
+.pull-left[
+
+
+- Dans l'exemple précedent, N représente le nombre d'individus présents dans la population.
+
+<br>
+<br>
+
+- À l'échelle des sites visités, N devient le nombre de sites occupés par l'espèce. 
+
+]
+
+.pull-right[
+
+![:scale 100%](images/tortuesexample.png)
+
+]
 
 ---
 
@@ -355,16 +404,11 @@ La probabilité d'observer l'historique ( $h$ ) de l'espèce dans le site A:
 
 
 
-$$ Pr(h_A=110)  = \psi \: p_1 \:  p_2 \: (1-p_3)$$
-.center[ $\psi$ = Probabilité d'occupation, $p$  = Probabilité de détection]
+$$Pr(h_A=110)  = \psi \: p_1 \:  p_2 \: (1-p_3)$$
+$\psi$ = Probabilité d'occupation, $p$  = Probabilité de détection
 
 <br>
 
-E.g:
-$\psi$ = 1 et $p$  = 0.7
-
-$$ Pr(h_A=110)  = 1* 0.7*0.7*(1-0.7)  = $$
---
 
 Mais qu’est-ce qu’on fait avec les endroits qu'il y a aucune observation?
 
@@ -797,40 +841,32 @@ Ces modèles sont:
 
 # 1. Importer et formater les données
 
+**Familiarisez-vous avec le jeu de données**
 
+**1.** Ouvrez le script de l'atelier dans `R`
+
+**2.** Ouvrez le jeu de données `borchi.csv` dans `R`
+
+**3.** Explorez la structure du jeu de données
+
+--
+
+
+# Qu'est-ce que vous observez?
+
+--
 <br>
 
-
-.pull-left[
-
-```{r eval=FALSE}
-library(unmarked)
-library(AICcmodavg)
-
-borchi <- read.csv("borchi.csv", 
-                   header = TRUE)
-str(borchi)
-```
-
-]
-
-.pull-right[
-
-.center[![:scale 50%](images/DSC_0605.jpg)]
-
-]
-
-
-<br>
-
-| V1 | V2  | V3  | conif |  temp1      |  temp2 | temp3  | jj1 | jj2 | jj3|
+| V1 | V2  | V3  | Conif |  Temp1      |  Temp2 | Temp3  | jj1 | jj2 | jj3|
 |:-----: | :---:     |:--:    |  :------:  |:------: |:-----:| :---:  |:--:   |:-----:| :---:    |
  | 1        | 1         |  0     |  0.5     | 7.5       | 8.6    | 7.9      | 8    |13      | 25       |  
  | 1        | 0         | 0      |  1.0     |10.9      | 10.1     | 11.3     |11     |22     | 26        | 
  | 0        | 0         |  0     |  0.2     | 8.6      | 8.3     | 9.3    |  11    |11      | 25       | 
 
+--
+.center[![:scale 80%](images/infodataset.png)]
 
-<br>
+
 
 ---
 

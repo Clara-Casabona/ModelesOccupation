@@ -4,18 +4,18 @@
 
 # Ceci est un script afin de suivre les différents codes présenter pendant
 # l'atelier. 
-#                                                                             #
-# Il est minimalement annoté pour permettre aux participants de fournir leurs #
-# commentaires : une pratique que nous encourageons vivement.                 #
-#                                                                             #
-# Notez que les solutions aux défis ne sont pas incluses dans ce script.     #
-# Les solutions vont être révélées lors de l'atelier                           #
-#                                                                             #
+#                                                                             
+# Il est minimalement annoté pour permettre aux participants de fournir leurs 
+# commentaires : une pratique que nous encourageons vivement.                 
+#                                                                             
+# Notez que les solutions aux défis ne sont pas incluses dans ce script.     
+# Les solutions vont être révélées lors de l'atelier                           
+#                                                                             
 # Bon codage !  
 
 
 
-#install.packages("unmarked", dependencies = TRUE)
+# install.packages("unmarked", dependencies = TRUE)
 # install.packages("AICcmodavg")
 # install.packages("ggplot2")
 
@@ -54,7 +54,7 @@ MLE = probDet[which(LL==max(LL))]
 abline(v = MLE, col="red", lwd=3, lty=2)
 
 ##############################################
-##############  Défi likelihood###############
+##############  Défi likelihood ##############
 ##############################################
 
 
@@ -187,7 +187,7 @@ ggplot(new_dats, aes(temp)) +
 
 
 ###########################################################
-######## Predictions - Pourcentage de conifères ###########
+#### Predictions - Pourcentage de conifères - Défi ########
 ###########################################################
 
 
