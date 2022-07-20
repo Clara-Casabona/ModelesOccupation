@@ -107,11 +107,11 @@ Tout au long de cet atelier, il y aura une série de **défis** et des  **questi
 
 --
 
-.alert[**1. Quelle est la probabilité d'observer une mésange à tête brune dans une série de sites?**]
+.alert[**1. Quelle est la probabilité de détecter une mésange à tête brune dans une série de sites?**]
 
 --
 
-.alert[**2. Est-ce que la présence de la mésange à tête brune dans une parcelle de forêt augmente avec pourcentage de conifères?**]
+.alert[**2. Est-ce que la présence de la mésange à tête brune dans une parcelle de forêt augmente avec le pourcentage de conifères?**]
 
 --
 
@@ -477,7 +477,7 @@ Lors d'une visite, l'espèce peut être détect (1) ou non-détecté (0) (expér
 
 
 $$[x|v,p] = \frac{v!}{x!(v-x)!}*p^x(1-p)^{v-x}$$
-$x$ = nombre de détections pour  $v$ et  $p$ donnés
+$x$ = nombre d'observations pour  $v$ et  $p$ donnés
 
 $v$ = nombre total de visites
 
@@ -488,7 +488,7 @@ $p$ = probabilité de détecté la mésange
 
 .alert[**Quelle est la probabilité d'observer une mésange à tête brune dans un site?**]
 
-Exemple: Dans 1 site avec 3 visites et 2 détections
+Exemple: Dans 1 site avec 3 visites et 2 observations
 
 
 $$[x = 2|v = 3, p] = \frac{3!}{2!(3-2)!}*p^2(1-p)^{3-2}$$
@@ -1128,7 +1128,7 @@ Bootstrap iterations: 0
 
 ##### 2.2 Inspecter les modèles
 
-.alert[**1. Quelle est la probabilité d'observer une mésange à tête brune dans une série de sites?**]
+.alert[**1. Quelle est la probabilité de détecter une mésange à tête brune dans une série de sites?**]
 
 ```
 Call:
@@ -1581,7 +1581,7 @@ ggplot(new_dats, aes(conif)) +
 
 <br>
 
-.alert[**2. Est-ce que la présence de la mésange à tête brune dans une parcelle de forêt augmente avec pourcentage de conifères?**]
+.alert[**2. Est-ce que la présence de la mésange à tête brune dans une parcelle de forêt augmente avec le pourcentage de conifères?**]
 
 --
 
